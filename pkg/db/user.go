@@ -1,4 +1,4 @@
-package models
+package db
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var db *bun.DB
 var ctx = context.Background()
 
 type User struct {
@@ -20,6 +19,7 @@ type User struct {
 	Email     string    `json:"email" bun:"email,unique,notnull"`
 	Password  string    `json:"password" bun:"password,notnull"`
 	CreatedAt time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
+	UpdatedAt time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
 }
 
 func InsertUser(user User) error {
@@ -38,4 +38,9 @@ func GetUsersinfo() ([]User, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }

@@ -22,6 +22,11 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
 }
 
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func InsertUser(user User) error {
 	_, err := db.NewInsert().Model(&user).Exec(ctx)
 	if err != nil {
@@ -40,7 +45,37 @@ func GetUsersinfo() ([]User, error) {
 	return users, nil
 }
 
-type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+func UpdateUser(user User) error {
+	_, err := db.NewUpdate().
+		Model(&user).
+		Column("email", "password", "updated_at").
+		Where("username = ?", user.Username).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetUserByID(id int64) (User, error) {
+	var user User
+	err := db.NewSelect().Model(&user).Where("id = ?", id).Scan(ctx)
+	if err != nil {
+		log.Printf("Error fetching user: %v", err)
+		return user, err
+	}
+	return user, nil
+}
+
+func GetUserByUsername(username string, user *User) error {
+	err := db.NewSelect().
+		Model(user).
+		Where("username = ?", username).
+		Limit(1).
+		Scan(ctx)
+
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -115,7 +115,7 @@ func AuthLogin(w http.ResponseWriter, r *http.Request) {
 	err = db.GetUserByUsername(creds.Username, &user)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			validationErrors = append(validationErrors, "Invalid credentials")
+			validationErrors = append(validationErrors, "Could not find user")
 			utils.NewErrorResponse(w, http.StatusUnauthorized, validationErrors)
 			return
 		}

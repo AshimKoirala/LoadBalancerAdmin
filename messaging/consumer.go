@@ -1,4 +1,4 @@
-package queue
+package messaging
 
 import (
 	"log"
@@ -6,13 +6,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Panicf("%s: %s", msg, err)
-	}
-}
-
-func SetupQueue() {
+func SetupConsumer() {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -22,12 +16,12 @@ func SetupQueue() {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		"admin", // name
-		true,    // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
+		"reverseproxy-to-admin", // name
+		true,                    // durable
+		false,                   // delete when unused
+		false,                   // exclusive
+		false,                   // no-wait
+		nil,                     // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
 
@@ -46,7 +40,7 @@ func SetupQueue() {
 
 	go func() {
 		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
+			processMessage(d.Body)
 		}
 	}()
 

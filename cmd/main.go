@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
+	"github.com/AshimKoirala/load-balancer-admin/messaging"
 	"github.com/AshimKoirala/load-balancer-admin/pkg/handlers"
-	"github.com/AshimKoirala/load-balancer-admin/queue"
 	"github.com/joho/godotenv"
 )
 
@@ -20,8 +20,13 @@ func main() {
 	//    }else{
 	// 	log.Println("Email sent successfully!")
 	//    }
+
+	messaging.InitializePublisher()
+	defer messaging.CleanupPublisher()
+
 	go func() {
-		queue.SetupQueue()
+		messaging.SetupConsumer()
 	}()
+
 	handlers.Handler()
 }

@@ -20,6 +20,8 @@ type User struct {
 	Password  string    `json:"password" bun:"password,notnull"`
 	CreatedAt time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
 	UpdatedAt time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
+	Password_Reset_Token   string    `bun:"password_reset_token"`       
+    OTPExpiry  time.Time `bun:"otp_expiry"` 
 }
 
 type Credentials struct {
@@ -78,4 +80,29 @@ func GetUserByUsername(username string, user *User) error {
 		return err
 	}
 	return nil
+}
+
+func GetUserByOTP(otp string) (User, error) {
+	var user User
+	err := db.NewSelect().
+		Model(&user).
+		Where("password_reset_token = ?", otp).
+		Where("otp_expiry > ?", time.Now()). // Ensure OTP is still valid
+		Limit(1).
+		Scan(ctx)
+	if err != nil {
+		return user, err
+	}
+	return user, nil
+}
+
+func UpdatePassword(userID int64, hashedPassword string) error {
+	_, err := db.NewUpdate().
+		Model(&User{}).
+		Set("password = ?", hashedPassword).
+		Set("password_reset_token = NULL").  // Clear the OTP
+		Set("otp_expiry = NULL").
+		Where("id = ?", userID).
+		Exec(ctx)
+	return err
 }

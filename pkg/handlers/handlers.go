@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/AshimKoirala/load-balancer-admin/middleware"
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
@@ -22,13 +23,19 @@ func Handler() {
 	mux.Handle("/admin/protected", middleware.AuthMiddleware(http.HandlerFunc(ProtectedRoute)))
 	mux.HandleFunc("/admin/users", GetUsers)
 	mux.HandleFunc("/admin/update", UpdateUser)
+	mux.HandleFunc("/admin/forgotpassword", ForgotPassword)
+	mux.HandleFunc("/admin/resetpassword", ResetPassword)
 
 	// Wrap the entire mux with CORS
 	handlerWithCORS := middleware.CORS(mux)
 
 	// Start the server
-	log.Println("Server is running on :8080")
-	if err := http.ListenAndServe(":8080", handlerWithCORS); err != nil {
+	port := os.Getenv("SERVER_PORT")
+    if port == "" {
+    port = "8080" 
+       }
+	log.Println("Server is running on : %s",port)
+	if err := http.ListenAndServe(":"+port, handlerWithCORS); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

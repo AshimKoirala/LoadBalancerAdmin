@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -25,10 +27,13 @@ type Replica struct {
 
 //add replica
 func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) error {
-    if name == "" || url == "" || healthCheckEndpoint == "" {
-        return fmt.Errorf("all fields (name, url, healthCheckEndpoint) must be provided")
-    }
-
+   switch {
+	case name == "" || url == "" || healthCheckEndpoint == "":
+		return fmt.Errorf("all fields (name, url, healthCheckEndpoint) must be provided")
+	case !strings.HasPrefix(url, os.Getenv("REPLICA_URL")):
+    return fmt.Errorf("Malicious URL")
+	}
+	
     // Perform health check
     resp, err := http.Get(healthCheckEndpoint)
     if err != nil {

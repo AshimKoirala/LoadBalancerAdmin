@@ -25,9 +25,10 @@ func Handler() {
 	mux.HandleFunc("/admin/update", UpdateUser)
 	mux.HandleFunc("/admin/forgotpassword", ForgotPassword)
 	mux.HandleFunc("/admin/resetpassword", ResetPassword)
-	mux.HandleFunc("/admin/add_replica", AddReplica)
-    mux.HandleFunc("/admin/remove_replica", RemoveReplica)
-    mux.HandleFunc("/admin/change_status", ChangeStatus)
+	mux.HandleFunc("/admin/addreplica", AddReplica)
+    mux.HandleFunc("/admin/removereplica", RemoveReplica)
+    mux.HandleFunc("/admin/changestatus", ChangeStatus)
+    mux.HandleFunc("/admin/status", Status)
 
 	// Wrap the entire mux with CORS
 	handlerWithCORS := middleware.CORS(mux)

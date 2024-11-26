@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"os"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -11,7 +12,7 @@ import (
 var db *bun.DB
 
 func InitDB() error {
-	dsn := "postgres://postgres:postgres@localhost:5432/prequal?sslmode=disable"
+	dsn := os.Getenv("DATABASE_URL")
 	sqldb, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Printf("Unable to connect to database: %v", err)

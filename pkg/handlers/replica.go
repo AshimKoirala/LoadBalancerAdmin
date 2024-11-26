@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
+	"github.com/AshimKoirala/load-balancer-admin/messaging"
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
 	"github.com/AshimKoirala/load-balancer-admin/utils"
 )
@@ -30,11 +32,27 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Publish message to RabbitMQ
+	message := &messaging.Message{
+		Name: "ReplicaAdded",
+		Body: map[string]string{
+			"name": payload.Name,
+			"url":  payload.URL,
+		},
+	}
+	if err := messaging.PublishMessage("replica-events", message); err != nil {
+		log.Printf("Failed to publish message: %v", err)
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
+		return
+	}
+
 	// Return success message if replica is added successfully
 	utils.NewSuccessResponse(w, "Replica added successfully")
 }
 
-
+func Status(w http.ResponseWriter, r *http.Request){
+	log.Println("Replica status checking..")
+}
 
 
 func RemoveReplica(w http.ResponseWriter, r *http.Request) {

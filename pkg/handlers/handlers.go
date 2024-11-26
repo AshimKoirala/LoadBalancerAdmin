@@ -23,22 +23,22 @@ func Handler() {
 	mux.Handle("/admin/protected", middleware.AuthMiddleware(http.HandlerFunc(ProtectedRoute)))
 	mux.HandleFunc("/admin/users", GetUsers)
 	mux.HandleFunc("/admin/update", UpdateUser)
-	mux.HandleFunc("/admin/forgotpassword", ForgotPassword)
-	mux.HandleFunc("/admin/resetpassword", ResetPassword)
-	mux.HandleFunc("/admin/addreplica", AddReplica)
-    mux.HandleFunc("/admin/removereplica", RemoveReplica)
-    mux.HandleFunc("/admin/changestatus", ChangeStatus)
-    mux.HandleFunc("/admin/status", Status)
+	mux.HandleFunc("/admin/forgot-password", ForgotPassword)
+	mux.HandleFunc("/admin/reset-password", ResetPassword)
+	mux.HandleFunc("/admin/add-replica", AddReplica)
+	mux.HandleFunc("/admin/remove-replica", RemoveReplica)
+	mux.HandleFunc("/admin/change-status", ChangeStatus)
+	mux.HandleFunc("/admin/status", Status)
 
 	// Wrap the entire mux with CORS
 	handlerWithCORS := middleware.CORS(mux)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")
-    if port == "" {
-    port = "8080" 
-       }
-	log.Println("Server is running on : %s",port)
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Server is running on : %s", port)
 	if err := http.ListenAndServe(":"+port, handlerWithCORS); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

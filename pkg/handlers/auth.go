@@ -239,38 +239,37 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func ForgotPassword(w http.ResponseWriter, r *http.Request) {
-    var getEmail struct {
-        Email string `json:"email"`
-    }
+	var getEmail struct {
+		Email string `json:"email"`
+	}
 
-    err := json.NewDecoder(r.Body).Decode(&getEmail)
-    if err != nil {
-        utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request getEmail"})
-        return
-    }
+	err := json.NewDecoder(r.Body).Decode(&getEmail)
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request getEmail"})
+		return
+	}
 
-    log.Printf("Generating OTP for email: %s", getEmail.Email) // Log the email
+	log.Printf("Generating OTP for email: %s", getEmail.Email) // Log the email
 
-    // Generate and store the OTP
-    otp, err := db.SetPasswordResetOTP(getEmail.Email)
-    if err != nil {
-        log.Printf("Error generating OTP for email %s: %v", getEmail.Email, err) // Log error
-        utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error generating reset OTP"})
-        return
-    }
+	// Generate and store the OTP
+	otp, err := db.SetPasswordResetOTP(getEmail.Email)
+	if err != nil {
+		log.Printf("Error generating OTP for email %s: %v", getEmail.Email, err) // Log error
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error generating reset OTP"})
+		return
+	}
 
-    log.Printf("OTP generated for email %s: %s", getEmail.Email, otp) // Log generated OTP
+	log.Printf("OTP generated for email %s: %s", getEmail.Email, otp) // Log generated OTP
 
-    // Send OTP via email 
-    err = utils.NewEmailResponse(getEmail.Email, "Password Reset OTP", "Your OTP is: "+otp)
-    if err != nil {
-        utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error sending email"})
-        return
-    }
+	// Send OTP via email
+	err = utils.NewEmailResponse(getEmail.Email, "Password Reset OTP", "Your OTP is: "+otp)
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error sending email"})
+		return
+	}
 
-    utils.NewSuccessResponse(w, "OTP sent to your email")
+	utils.NewSuccessResponse(w, "OTP sent to your email")
 }
-
 
 func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
@@ -304,6 +303,5 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error updating password"})
 		return
 	}
-
-	 utils.NewSuccessResponse(w, "Password reset successfully")
+	utils.NewSuccessResponse(w, "Password reset successfully")
 }

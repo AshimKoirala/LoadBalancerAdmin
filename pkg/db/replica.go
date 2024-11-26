@@ -3,9 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"strings"
+	"log"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -15,52 +13,38 @@ import (
 type Replica struct {
 	bun.BaseModel `bun:"table:replicas"`
 
-	ID        int64     `json:"id" bun:"id,pk,autoincrement"`
-	Name  string    `json:"name" bun:"name,unique,notnull"`
-	URL     string    `json:"url" bun:"url,unique,notnull"`
-	Status   string    `bun:"status,notnull"`
+	ID                  int64     `json:"id" bun:"id,pk,autoincrement"`
+	Name                string    `json:"name" bun:"name,unique,notnull"`
+	URL                 string    `json:"url" bun:"url,unique,notnull"`
+	Status              string    `bun:"status,notnull"`
 	HealthCheckEndpoint string    `bun:"healthcheck_endpoint,notnull"`
-	CreatedAt time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
-	UpdatedAt time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
-
+	CreatedAt           time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
+	UpdatedAt           time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
 }
 
-//add replica
+const (
+	INACTIVE = "inactive"
+	ACTIVE   = "active"
+	DISABLED = "disabled"
+)
+
+// add replica
 func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) error {
-   switch {
-	case name == "" || url == "" || healthCheckEndpoint == "":
-		return fmt.Errorf("all fields (name, url, healthCheckEndpoint) must be provided")
-	case !strings.HasPrefix(url, os.Getenv("REPLICA_URL")):
-    return fmt.Errorf("Malicious URL")
+	replica := &Replica{
+		Name:                name,
+		URL:                 url,
+		Status:              INACTIVE,
+		HealthCheckEndpoint: healthCheckEndpoint,
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
 	}
-	
-    // Perform health check
-    resp, err := http.Get(healthCheckEndpoint)
-    if err != nil {
-        return fmt.Errorf("failed to check health: %v", err)
-    }
-    defer resp.Body.Close()
 
-    if resp.StatusCode != 200 {
-        return fmt.Errorf("health check failed for %s. Status code: %d", name, resp.StatusCode)
-    }
-
-    replica := &Replica{
-        Name:                name,
-        URL:                 url,
-        Status:              "inactive", // Default status
-        HealthCheckEndpoint: healthCheckEndpoint,
-        CreatedAt:           time.Now(),
-        UpdatedAt:           time.Now(),
-    }
-
-    _, err = db.NewInsert().Model(replica).Exec(ctx)
-    if err != nil {
-        return fmt.Errorf("error adding replica: %v", err)
-    }
-    return nil
+	_, err := db.NewInsert().Model(replica).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("error adding replica: %v", err)
+	}
+	return nil
 }
-
 
 // remove replica by id
 func RemoveReplica(ctx context.Context, id int64) error {
@@ -79,7 +63,7 @@ func RemoveReplica(ctx context.Context, id int64) error {
 
 // Change status of a replica to active, inactive, or disabled
 func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
-	if newStatus != "active" && newStatus != "inactive" && newStatus != "disabled" {
+	if newStatus != ACTIVE && newStatus != INACTIVE && newStatus != DISABLED {
 		return fmt.Errorf("invalid status: %s. Allowed values are 'active', 'inactive', or 'disabled'", newStatus)
 	}
 
@@ -95,4 +79,15 @@ func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
 
 	fmt.Printf("Replica ID %d status changed to %s successfully.\n", id, newStatus)
 	return nil
+}
+
+// find a replica by id
+func GetReplicaByID(id int64) (Replica, error) {
+	var replica Replica
+	err := db.NewSelect().Model(&replica).Where("id = ?", id).Scan(ctx)
+	if err != nil {
+		log.Printf("Error fetching user: %v", err)
+		return replica, err
+	}
+	return replica, nil
 }

@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/AshimKoirala/load-balancer-admin/messaging"
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
@@ -19,41 +21,65 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 
 	// Decode request body
 	err := json.NewDecoder(r.Body).Decode(&payload)
+
+	switch {
+	case payload.Name == "" || payload.URL == "" || payload.HealthcheckEndpoint == "":
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"all fields (name, url, healthCheckEndpoint) must be provided"})
+		return
+		// case !strings.HasPrefix(payload.URL, os.Getenv("REPLICA_URL")):
+		// 	return fmt.Errorf("malicious URL")
+	}
+
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
 		return
 	}
+	url, err := url.Parse(payload.URL)
 
-	// check health and add replica to db
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Malformed url"})
+		return
+	}
+
+	resp, err := http.Get(fmt.Sprintf("%s://%s/%s", url.Scheme, url.Host, payload.HealthcheckEndpoint))
+
+	if resp.StatusCode != http.StatusOK {
+		// log.Printf("received non-200 response: %d", resp.StatusCode)
+
+		if err != nil {
+			utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Replica did not pass the healthcheck"})
+			return
+		}
+	}
+	defer resp.Body.Close()
+
 	err = db.AddReplica(r.Context(), payload.Name, payload.URL, payload.HealthcheckEndpoint)
 	if err != nil {
-		// If there's an error i.e health check fail then return an appropriate error response
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{err.Error()})
 		return
 	}
 
 	// Publish message to RabbitMQ
 	message := &messaging.Message{
-		Name: "ReplicaAdded",
+		Name: "replica-added",
 		Body: map[string]string{
 			"name": payload.Name,
 			"url":  payload.URL,
 		},
 	}
-	if err := messaging.PublishMessage("replica-events", message); err != nil {
+
+	if err := messaging.PublishMessage(utils.PUBLISHING_QUEUE, message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
 		return
 	}
 
-	// Return success message if replica is added successfully
 	utils.NewSuccessResponse(w, "Replica added successfully")
 }
 
-func Status(w http.ResponseWriter, r *http.Request){
+func Status(w http.ResponseWriter, r *http.Request) {
 	log.Println("Replica status checking..")
 }
-
 
 func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
@@ -67,10 +93,31 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	replica, err := db.GetReplicaByID(payload.ID)
+
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusNotFound, []string{"Could not find replica"})
+		return
+	}
+
 	// Remove replica from the database
 	err = db.RemoveReplica(r.Context(), payload.ID)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to remove replica"})
+		return
+	}
+
+	message := &messaging.Message{
+		Name: "replica-removed",
+		Body: map[string]string{
+			"name": replica.Name,
+			"url":  replica.URL,
+		},
+	}
+
+	if err := messaging.PublishMessage(utils.PUBLISHING_QUEUE, message); err != nil {
+		log.Printf("Failed to publish message: %v", err)
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
 		return
 	}
 

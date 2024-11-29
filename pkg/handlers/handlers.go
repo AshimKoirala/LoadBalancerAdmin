@@ -26,6 +26,7 @@ func Handler() {
 	mux.HandleFunc("/admin/forgot-password", ForgotPassword)
 	mux.HandleFunc("/admin/reset-password", ResetPassword)
 	mux.HandleFunc("/admin/add-replica", AddReplica)
+	mux.HandleFunc("/admin/get-replica", GetReplicas)
 	mux.HandleFunc("/admin/remove-replica", RemoveReplica)
 	mux.HandleFunc("/admin/change-status", ChangeStatus)
 	mux.HandleFunc("/admin/status", Status)

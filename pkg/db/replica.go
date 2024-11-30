@@ -91,3 +91,11 @@ func GetReplicaByID(id int64) (Replica, error) {
 	}
 	return replica, nil
 }
+func GetReplicas(ctx context.Context) ([]Replica, error) {
+	var replicas []Replica
+	err := db.NewSelect().Model(&replicas).Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching replicas: %v", err)
+	}
+	return replicas, nil
+}

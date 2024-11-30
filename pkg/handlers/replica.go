@@ -13,6 +13,10 @@ import (
 )
 
 func AddReplica(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
+		return
+	}
 	var payload struct {
 		Name                string `json:"name"`
 		URL                 string `json:"url"`
@@ -81,7 +85,25 @@ func Status(w http.ResponseWriter, r *http.Request) {
 	log.Println("Replica status checking..")
 }
 
+func GetReplicas(w http.ResponseWriter, r *http.Request){
+	if r.Method != http.MethodGet {
+		utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
+		return
+	}
+	replicas, err := db.GetReplicas(r.Context())
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch replicas"})
+		return
+	}
+
+	utils.NewSuccessResponse(w, replicas)
+}
+
 func RemoveReplica(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
+		return
+	}
 	var payload struct {
 		ID int64 `json:"id"`
 	}
@@ -125,6 +147,10 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 }
 
 func ChangeStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+	    utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
+		return
+	}
 	var payload struct {
 		ID        int64  `json:"id"`
 		NewStatus string `json:"new_status"`

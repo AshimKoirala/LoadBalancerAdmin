@@ -50,13 +50,19 @@ func GetUsersinfo() ([]User, error) {
 }
 
 func UpdateUser(user User) error {
-	_, err := db.NewUpdate().
-		Model(&user).
-		Column("email", "password", "updated_at").
-		Where("username = ?", user.Username).
-		Exec(ctx)
+	query := db.NewUpdate().Model(&user).Column("updated_at")
+
+	if user.Username != "" {
+		query = query.Column("username")
+	}
+
+	if user.Password != "" {
+		query = query.Column("password")
+	}
+
+	_, err := query.Where("id = ?", user.ID).Exec(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update user: %w", err)
 	}
 	return nil
 }

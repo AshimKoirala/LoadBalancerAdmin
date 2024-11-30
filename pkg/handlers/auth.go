@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"sync"
 	"time"
 	"unicode"
 
@@ -16,7 +15,6 @@ import (
 
 var (
 	users        = make(map[string]db.User)
-	usersMutex   sync.Mutex
 	emailRegex   = regexp.MustCompile(`^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}$`)
 	psymbolRegex = regexp.MustCompile(`[!@#$%^&*(),.?":{}|<>]`)
 )
@@ -175,17 +173,24 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	var updatedUser db.User
+	var payload struct {
+		ID              int64  `json:"id"`
+		Username        string `json:"username,omitempty"`
+		CurrentPassword string `json:"current_password,omitempty"`
+		NewPassword     string `json:"new_password,omitempty"`
+	}
 	var validationErrors []string
 
-	err := json.NewDecoder(r.Body).Decode(&updatedUser)
+	// Decode request payload
+	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		validationErrors = append(validationErrors, "Invalid request payload")
 		utils.NewErrorResponse(w, http.StatusBadRequest, validationErrors)
 		return
 	}
 
-	user, err := db.GetUserByID(updatedUser.ID)
+	// Fetch user by ID
+	user, err := db.GetUserByID(payload.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			validationErrors = append(validationErrors, "User not found")
@@ -196,27 +201,38 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate and update fields
-	if updatedUser.Username != "" {
-		user.Username = updatedUser.Username
+	// Update username if provided
+	if payload.Username != "" {
+		user.Username = payload.Username
 	}
 
-	if updatedUser.Email != "" {
-		if !emailRegex.MatchString(updatedUser.Email) {
-			validationErrors = append(validationErrors, "Invalid email format")
+	// Validate and update password
+	if payload.CurrentPassword != "" {
+		// Check if current password matches
+		if !utils.CheckPasswordHash(payload.CurrentPassword, user.Password) {
+			validationErrors = append(validationErrors, "Current password is incorrect")
 		} else {
-			user.Email = updatedUser.Email
-		}
-	}
+			// Validate the new password
+			if len(payload.NewPassword) < 8 || len(payload.NewPassword) > 32 {
+				validationErrors = append(validationErrors, "Password must be between 8 and 32 characters long")
+			}
+			if !utils.ContainsCapitalLetter(payload.NewPassword) {
+				validationErrors = append(validationErrors, "Password must contain at least one capital letter")
+			}
+			if !utils.ContainsSymbol(psymbolRegex, payload.NewPassword) {
+				validationErrors = append(validationErrors, "Password must contain at least one symbol")
+			}
 
-	// Update password
-	if updatedUser.Password != "" {
-		hashedPassword, err := utils.HashPassword(updatedUser.Password)
-		if err != nil {
-			utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error hashing password"})
-			return
+			// If validations pass, hash the new password
+			if len(validationErrors) == 0 {
+				hashedPassword, err := utils.HashPassword(payload.NewPassword)
+				if err != nil {
+					utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error hashing password"})
+					return
+				}
+				user.Password = hashedPassword
+			}
 		}
-		user.Password = hashedPassword
 	}
 
 	// If there are validation errors, send an error response
@@ -225,10 +241,10 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the timestamp
+	// Update timestamp
 	user.UpdatedAt = time.Now()
 
-	// Save the updated user
+	// Save the updated user to the database
 	err = db.UpdateUser(user)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error updating user"})

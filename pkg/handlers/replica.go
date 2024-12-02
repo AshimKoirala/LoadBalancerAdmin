@@ -104,18 +104,17 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 		utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
 		return
 	}
+
 	var payload struct {
 		ID int64 `json:"id"`
 	}
 
-	// Decode request body
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || payload.ID <= 0 {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid or missing ID in request payload"})
 		return
 	}
 
-	replica, err := db.GetReplicaByID(payload.ID)
+	replica, err := db.GetReplicaByID(r.Context(), payload.ID)
 
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusNotFound, []string{"Could not find replica"})

@@ -24,7 +24,6 @@ func NewSuccessResponse(w http.ResponseWriter, data interface{}) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// all error into array
 func NewErrorResponse(w http.ResponseWriter, statusCode int, errors []string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -58,4 +57,13 @@ func NewEmailResponse(to string, subject string, body string) error {
 		return err
 	}
 	return nil
+}
+
+func NewSuccessResponseWithData(w http.ResponseWriter, data interface{}) {
+    response := map[string]interface{}{
+        "success": true,
+        "data":    data,
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }

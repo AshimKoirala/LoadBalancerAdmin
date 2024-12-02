@@ -30,6 +30,7 @@ func Handler() {
 	mux.HandleFunc("/admin/remove-replica", RemoveReplica)
 	mux.HandleFunc("/admin/change-status", ChangeStatus)
 	mux.HandleFunc("/admin/status", Status)
+	mux.HandleFunc("/admin/activity_logs", GetActivityLogs)
 
 	// Wrap the entire mux with CORS
 	handlerWithCORS := middleware.CORS(mux)

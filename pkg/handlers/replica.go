@@ -129,7 +129,8 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 	}
 
 	message := &messaging.Message{
-		Name: "replica-removed",
+		//Name: "replica-removed",
+		Name: "replica-disabled",
 		Body: map[string]string{
 			"name": replica.Name,
 			"url":  replica.URL,
@@ -142,7 +143,8 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.NewSuccessResponse(w, "Replica removed successfully")
+	//utils.NewSuccessResponse(w, "Replica removed successfully")
+	utils.NewSuccessResponse(w, "Replica disabled successfully")
 }
 
 func ChangeStatus(w http.ResponseWriter, r *http.Request) {

@@ -65,14 +65,27 @@ func RemoveReplica(ctx context.Context, id int64) error {
         return fmt.Errorf("error fetching replica: %v", err)
     }
 
-    // Delete the replica from the database
-    _, err = db.NewDelete().Model((*Replica)(nil)).Where("id = ?", id).Exec(ctx)
-    if err != nil {
-        log.Printf("Error deleting replica with ID: %d, error: %v", id, err)
-        return fmt.Errorf("error removing replica: %v", err)
-    }
+	//set status to disabled
+	_, err = db.NewUpdate().
+        Model((*Replica)(nil)).
+        Set("status = ?", "disabled").
+        Where("id = ?", id).
+        Exec(ctx)
 
-    log.Printf("Successfully deleted replica with ID: %d", id)
+		 if err != nil {
+        log.Printf("Error disabling replica with ID: %d, error: %v", id, err)
+        return fmt.Errorf("error disabling replica: %v", err)
+		 }
+		 log.Printf("Successfully disabled replica with ID: %d", id)
+
+    // Delete the replica from the database
+    // _, err = db.NewDelete().Model((*Replica)(nil)).Where("id = ?", id).Exec(ctx)
+    // if err != nil {
+    //     log.Printf("Error deleting replica with ID: %d, error: %v", id, err)
+    //     return fmt.Errorf("error removing replica: %v", err)
+    // }
+
+    // log.Printf("Successfully deleted replica with ID: %d", id)
 
     // Log the activity even if it fails
     logEntry := ActivityLog{

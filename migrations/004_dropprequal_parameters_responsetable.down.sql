@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS prequal_parameters_response;

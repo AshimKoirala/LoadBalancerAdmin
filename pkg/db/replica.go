@@ -39,44 +39,56 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 		UpdatedAt:           time.Now(),
 	}
 
-	_, err := db.NewInsert().Model(replica).Exec(ctx)
+	// Execute the insert operation and ensure the replica.ID is populated
+	_, err := db.NewInsert().Model(replica).Returning("id").Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("error adding replica: %v", err)
 	}
-	log := ActivityLog{
-		Type:      "success",
-		Message:   fmt.Sprintf("Replica '%s' added successfully", name),
-		ReplicaID: &replica.ID,
-	}
-	if logErr := AddActivityLog(ctx, log); logErr != nil {
-		return fmt.Errorf("error logging activity: %v", logErr)
+
+	// Log activity using the populated replica.ID
+	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' added successfully", name), &replica.ID); err != nil {
+		return fmt.Errorf("error logging activity: %v", err)
 	}
 
 	return nil
 }
 
 // remove replica by id
-func RemoveReplica(ctx context.Context, id int64) error {
-    log.Printf("Attempting to remove replica with ID: %d", id)
+func RemoveReplica(ctx context.Context, id *int64, url *string) error {
+    var replica *Replica
+    var err error
 
-    replica, err := GetReplicaByID(ctx, id)
+    if id != nil {
+        log.Printf("Attempting to remove replica with ID: %d", *id)
+        replica, err = GetReplicaByID(ctx, *id)
+    } else if url != nil {
+        log.Printf("Attempting to remove replica with URL: %s", *url)
+        replica, err = GetReplicaByURL(ctx, *url)
+    } else {
+        return fmt.Errorf("either id or url must be provided")
+    }
+
     if err != nil {
-        log.Printf("Error fetching replica with ID: %d, error: %v", id, err)
+        log.Printf("Error fetching replica: %v", err)
         return fmt.Errorf("error fetching replica: %v", err)
     }
 
-	//set status to disabled
-	_, err = db.NewUpdate().
-        Model((*Replica)(nil)).
-        Set("status = ?", "disabled").
-        Where("id = ?", id).
-        Exec(ctx)
+    // Set status to disabled
+  	query := db.NewUpdate().
+		Model((*Replica)(nil)).
+		Set("status = ?", "disabled")
 
-		 if err != nil {
-        log.Printf("Error disabling replica with ID: %d, error: %v", id, err)
-        return fmt.Errorf("error disabling replica: %v", err)
-		 }
-		 log.Printf("Successfully disabled replica with ID: %d", id)
+	if id != nil {
+		query.Where("id = ?", *id)
+	} else if url != nil {
+		query.Where("url = ?", *url)
+	}
+
+	_, err = query.Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("error disabling replica: %v", err)
+	}
+	log.Printf("Successfully disabled replica with ID: %d", replica.ID)
 
     // Delete the replica from the database
     // _, err = db.NewDelete().Model((*Replica)(nil)).Where("id = ?", id).Exec(ctx)
@@ -87,16 +99,11 @@ func RemoveReplica(ctx context.Context, id int64) error {
 
     // log.Printf("Successfully deleted replica with ID: %d", id)
 
-    // Log the activity even if it fails
-    logEntry := ActivityLog{
-        Type:      "warning",
-        Message:   fmt.Sprintf("Replica '%s' removed", replica.Name),
-        ReplicaID: &id,
-    }
-
-    if logErr := AddActivityLog(ctx, logEntry); logErr != nil {
-        log.Printf("Error logging activity for replica '%s': %v", replica.Name, logErr)
-    }
+    // Log the activity
+    if err := LogActivity(ctx, "warning", fmt.Sprintf("Replica '%s' removed", replica.Name), &replica.ID);
+	 err != nil {
+    log.Printf("Error logging activity for replica '%s': %v", replica.Name, err)
+     }
 
     return nil
 }
@@ -124,27 +131,34 @@ func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
 		return fmt.Errorf("error changing replica status: %v", err)
 	}
 
-	log := ActivityLog{
-		Type:      "success",
-		Message:   fmt.Sprintf("Replica '%s' status changed to '%s'", replica.Name, newStatus),
-		ReplicaID: &id,
-	}
-	if logErr := AddActivityLog(ctx, log); logErr != nil {
-		return fmt.Errorf("error logging activity: %v", logErr)
-	}
+	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' status changed to '%s'", replica.Name, newStatus), &id); err != nil {
+	return fmt.Errorf("error logging activity: %v", err)
+     }
 
 	return nil
 }
 
 // find a replica by id
-func GetReplicaByID(ctx context.Context, id int64) (Replica, error) {
+func GetReplicaByID(ctx context.Context, id int64) (*Replica, error) {
 	var replica Replica
 	err := db.NewSelect().Model(&replica).Where("id = ?", id).Scan(ctx)
 	if err != nil {
 		log.Printf("Error fetching user: %v", err)
-		return replica, err
+		return nil, err
 	}
-	return replica, nil
+	return &replica, nil
+}
+
+func GetReplicaByURL(ctx context.Context, url string) (*Replica, error) {
+    replica := new(Replica)
+    err := db.NewSelect().
+        Model(replica).
+        Where("url = ?", url).
+        Scan(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("error fetching replica by URL: %v", err)
+    }
+    return replica, nil
 }
 func GetReplicas(ctx context.Context) ([]Replica, error) {
 	var replicas []Replica

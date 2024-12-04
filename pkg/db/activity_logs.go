@@ -41,3 +41,14 @@ func FetchActivityLogs(ctx context.Context) ([]ActivityLog, error) {
     return logs, nil
 }
 
+//reusable function to log activity
+func LogActivity(ctx context.Context, activityType, message string, replicaID *int64) error {
+	log := ActivityLog{
+		Type:      activityType,
+		Message:   message,
+		ReplicaID: replicaID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	return AddActivityLog(ctx, log)
+}

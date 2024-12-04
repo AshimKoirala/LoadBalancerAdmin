@@ -24,18 +24,12 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Decode request body
-	err := json.NewDecoder(r.Body).Decode(&payload)
-
-	switch {
-	case payload.Name == "" || payload.URL == "" || payload.HealthcheckEndpoint == "":
-		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"all fields (name, url, healthCheckEndpoint) must be provided"})
-		return
-		// case !strings.HasPrefix(payload.URL, os.Getenv("REPLICA_URL")):
-		// 	return fmt.Errorf("malicious URL")
-	}
-
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
+		return
+	    }
+	if payload.Name == "" || payload.URL == "" || payload.HealthcheckEndpoint == "" {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"All fields (name, URL, healthcheck_endpoint) must be provided"})
 		return
 	}
 	url, err := url.Parse(payload.URL)
@@ -106,25 +100,34 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload struct {
-		ID int64 `json:"id"`
+		ID  *int64  `json:"id,omitempty"`
+		URL *string `json:"url,omitempty"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || payload.ID <= 0 {
-		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid or missing ID in request payload"})
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || (payload.ID == nil && payload.URL == nil) {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid or missing ID/URL in request payload"})
 		return
 	}
 
-	replica, err := db.GetReplicaByID(r.Context(), payload.ID)
+	var replica *db.Replica
+	var err error
+
+	if payload.ID != nil {
+		replica, err = db.GetReplicaByID(r.Context(), *payload.ID)
+	} else if payload.URL != nil {
+		replica, err = db.GetReplicaByURL(r.Context(), *payload.URL)
+	}
 
 	if err != nil {
-		utils.NewErrorResponse(w, http.StatusNotFound, []string{"Could not find replica"})
+		utils.NewErrorResponse(w, http.StatusNotFound, []string{"Replica not found"})
 		return
 	}
 
 	// Remove replica from the database
-	err = db.RemoveReplica(r.Context(), payload.ID)
+	err = db.RemoveReplica(r.Context(), payload.ID, payload.URL)
 	if err != nil {
-		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to remove replica"})
+		log.Printf("Error disabling replica: %v", err)
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to disable replica"})
 		return
 	}
 

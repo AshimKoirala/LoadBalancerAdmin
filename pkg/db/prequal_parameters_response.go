@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -34,5 +35,17 @@ func GetPrequalParametersResponse(ctx context.Context) (PrequalParametersRespons
 // Insert new row
 func AddPrequalParametersResponse(ctx context.Context, response PrequalParametersResponse) error {
 	_, err := db.NewInsert().Model(&response).Exec(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to add prequal parameters response: %v", err)
+	}
+
+	message := fmt.Sprintf(
+		"Added prequal parameters: MaxLifeTime=%d, PoolSize=%d, ProbeFactor=%.2f, ProbeRemoveFactor=%d, Mu=%d",
+		response.MaxLifeTime, response.PoolSize, response.ProbeFactor, response.ProbeRemoveFactor, response.Mu,
+	)
+	if logErr := LogActivity(ctx, "success", message, nil); logErr != nil {
+		return fmt.Errorf("failed to log activity for prequal parameters response: %v", logErr)
+	}
 	return err
 }

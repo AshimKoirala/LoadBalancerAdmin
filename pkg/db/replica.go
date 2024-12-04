@@ -33,19 +33,17 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 	replica := &Replica{
 		Name:                name,
 		URL:                 url,
-		Status:              INACTIVE,
+		Status:              ACTIVE,
 		HealthCheckEndpoint: healthCheckEndpoint,
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
 	}
 
-	// Execute the insert operation and ensure the replica.ID is populated
 	_, err := db.NewInsert().Model(replica).Returning("id").Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("error adding replica: %v", err)
 	}
 
-	// Log activity using the populated replica.ID
 	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' added successfully", name), &replica.ID); err != nil {
 		return fmt.Errorf("error logging activity: %v", err)
 	}
@@ -167,4 +165,16 @@ func GetReplicas(ctx context.Context) ([]Replica, error) {
 		return nil, fmt.Errorf("error fetching replicas: %v", err)
 	}
 	return replicas, nil
+}
+
+func GetReplicaByName(ctx context.Context, name string) (*Replica, error) {
+	var replica Replica
+	err := db.NewSelect().
+		Model(&replica).
+		Where("name = ?", name).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch replica by name: %v", err)
+	}
+	return &replica, nil
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"github.com/AshimKoirala/load-balancer-admin/messaging"
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
@@ -32,6 +33,13 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"All fields (name, URL, healthcheck_endpoint) must be provided"})
 		return
 	}
+
+	matched, err := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, payload.HealthcheckEndpoint)
+	if err != nil || !matched {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"HealthcheckEndpoint must contain only alphanumeric characters, underscores (_), or hyphens (-)"})
+		return
+	}
+	
 	url, err := url.Parse(payload.URL)
 
 	if err != nil {
@@ -57,6 +65,12 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	replica, err := db.GetReplicaByName(r.Context(), payload.Name) 
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch added replica details"})
+		return
+	}
+
 	// Publish message to RabbitMQ
 	message := &messaging.Message{
 		Name: "replica-added",
@@ -72,7 +86,7 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.NewSuccessResponse(w, "Replica added successfully")
+	utils.NewSuccessResponse(w,replica)
 }
 
 func Status(w http.ResponseWriter, r *http.Request) {

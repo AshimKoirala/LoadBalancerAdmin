@@ -18,12 +18,17 @@ func failOnError(err error, msg string) {
 
 func processMessage(body []byte) {
 	var msg Message
-	err := json.Unmarshal(body, &msg)
-	if err != nil {
-		log.Printf("Failed to decode message: %v", err)
+	if err := json.Unmarshal(body, &msg); err != nil {
+		log.Printf("Failed to unmarshal message: %v", err)
 		return
 	}
-	log.Print("Received a message \n")
-	log.Printf("Name: %v", msg.Name)
-	log.Printf("Body: %v", msg.Body)
+
+	switch msg.Name {
+	case "replica-added":
+		handleReplicaAdded(msg.Body)
+	case "replica-removed":
+		handleReplicaRemoved(msg.Body)
+	default:
+		log.Printf("Unknown message type: %s", msg.Name)
+	}
 }

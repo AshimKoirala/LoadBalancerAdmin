@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -28,6 +29,10 @@ func processMessage(body []byte) {
 		handleReplicaAdded(msg.Body)
 	case "replica-removed":
 		handleReplicaRemoved(msg.Body)
+	case "parameters-modified":
+		fmt.Println("Parameters modified")
+	case "statistics":
+		fmt.Println("Save statistics")
 	default:
 		log.Printf("Unknown message type: %s", msg.Name)
 	}

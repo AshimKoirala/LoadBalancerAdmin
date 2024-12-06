@@ -30,7 +30,7 @@ func handleReplicaRemoved(body interface{}) {
 
 	replicaName, _ := data["name"].(string)
 	replicaURL, _ := data["url"].(string)
-
+	
 	log.Printf("Replica removed: Name=%s, URL=%s", replicaName, replicaURL)
 
 }

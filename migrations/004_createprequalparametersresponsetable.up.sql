@@ -4,7 +4,8 @@ CREATE TABLE prequal_parameters_response (
     pool_size INT NOT NULL,                       
     probe_factor FLOAT NOT NULL,                  
     probe_remove_factor INT NOT NULL,           
-    mu INT NOT NULL,                            
+    mu INT NOT NULL,
+    status VARCHAR(50) NOT NULL CHECK (status IN ('active', 'inactive')),                           
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
 );

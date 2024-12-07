@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
@@ -17,6 +18,7 @@ func GetPrequalParameters(w http.ResponseWriter, r *http.Request) {
 
 	response, err := db.GetPrequalParametersResponse(r.Context())
 	if err != nil {
+		 log.Printf("Error fetching latest prequal parameters response: %v", err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch the latest entry"})
 		return
 	}
@@ -36,6 +38,9 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
 		return
 	}
+	if payload.Status == "" {
+        payload.Status = "inactive"
+    }
 
 	err := db.AddPrequalParametersResponse(r.Context(), payload)
 	if err != nil {

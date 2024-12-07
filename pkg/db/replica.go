@@ -33,7 +33,7 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 	replica := &Replica{
 		Name:                name,
 		URL:                 url,
-		Status:              ACTIVE,
+		Status:              INACTIVE,
 		HealthCheckEndpoint: healthCheckEndpoint,
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
@@ -44,7 +44,7 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 		return fmt.Errorf("error adding replica: %v", err)
 	}
 
-	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' added successfully", name), &replica.ID); err != nil {
+	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is ready to be active", name), &replica.ID); err != nil {
 		return fmt.Errorf("error logging activity: %v", err)
 	}
 
@@ -119,6 +119,9 @@ func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
 		return fmt.Errorf("invalid status: %s. Allowed values are 'active', 'inactive', or 'disabled'", newStatus)
 	}
 
+	// Check if the status has changed and set the new status
+	oldStatus := replica.Status
+
 	_, err = db.NewUpdate().
 		Model((*Replica)(nil)).
 		Set("status = ?", newStatus).
@@ -129,9 +132,23 @@ func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
 		return fmt.Errorf("error changing replica status: %v", err)
 	}
 
-	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' status changed to '%s'", replica.Name, newStatus), &id); err != nil {
-	return fmt.Errorf("error logging activity: %v", err)
-     }
+	// Log the status change
+	if oldStatus != newStatus {
+		
+		// Deactivated status
+		if oldStatus == ACTIVE && newStatus == INACTIVE {
+			if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is deactivated", replica.Name), &id); err != nil {
+				return fmt.Errorf("error logging activity: %v", err)
+			}
+		}
+
+		// Activated status
+		if oldStatus == INACTIVE && newStatus == ACTIVE {
+			if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is activated and running", replica.Name), &id); err != nil {
+				return fmt.Errorf("error logging activity: %v", err)
+			}
+		}
+	}
 
 	return nil
 }

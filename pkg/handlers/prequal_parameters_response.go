@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -33,20 +34,31 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload db.PrequalParametersResponse
+	var payload struct {
+		Data       db.PrequalParametersResponse `json:"data"`
+		ActivateID *int64                       `json:"activate_id,omitempty"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
 		return
 	}
-	if payload.Status == "" {
-        payload.Status = "inactive"
-    }
 
-	err := db.AddPrequalParametersResponse(r.Context(), payload)
+	// Set default status if not provided
+	if payload.Data.Status == "" {
+		payload.Data.Status = "inactive"
+	}
+
+	// Call the database function with the payload
+	err := db.AddPrequalParametersResponse(r.Context(), payload.Data, payload.ActivateID)
 	if err != nil {
-		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to create new entry"})
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to create or activate entry"})
 		return
 	}
 
-	utils.NewSuccessResponse(w, "Entry created successfully")
+	message := "Prequal Parameter added successfully"
+	if payload.ActivateID != nil {
+		message += fmt.Sprintf(" and entry with ID %d was activated", *payload.ActivateID)
+	}
+
+	utils.NewSuccessResponse(w, message)
 }

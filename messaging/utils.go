@@ -29,6 +29,8 @@ func processMessage(body []byte) {
 		handleReplicaAdded(msg.Body)
 	case "replica-removed":
 		handleReplicaRemoved(msg.Body)
+	case "parameters-approved":
+		handleParametersApproved(msg.Body)
 	case "parameters-modified":
 		fmt.Println("Parameters modified")
 	case "parameters-updated":

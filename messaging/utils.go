@@ -29,8 +29,15 @@ func processMessage(body []byte) {
 		handleReplicaAdded(msg.Body)
 	case "replica-removed":
 		handleReplicaRemoved(msg.Body)
+<<<<<<< HEAD
 	case "parameters-modified":
 		fmt.Println("Parameters modified")
+=======
+	case "parameters-updated":
+		fmt.Println("Parameters modified")
+	case "parameters-update-failed":
+		fmt.Println("Failed to update parameters")
+>>>>>>> f01a359551e77a447348785928ff3519c2cde4e6
 	case "statistics":
 		fmt.Println("Save statistics")
 	default:

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"regexp"
 	"time"
-	"unicode"
 
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
 	"github.com/AshimKoirala/load-balancer-admin/utils"
@@ -45,11 +44,11 @@ func AuthRegister(w http.ResponseWriter, r *http.Request) {
 		validationErrors = append(validationErrors, "Password must be at least 8 characters long")
 	}
 
-	if !containsCapitalLetter(user.Password) {
+	if !utils.ContainsCapitalLetter(user.Password) {
 		validationErrors = append(validationErrors, "Password must contain at least one capital letter")
 	}
 
-	if !containsSymbol(user.Password) {
+	if !utils.ContainsSymbol(psymbolRegex, user.Password) {
 		validationErrors = append(validationErrors, "Password must contain at least one symbol")
 	}
 
@@ -85,19 +84,6 @@ func AuthRegister(w http.ResponseWriter, r *http.Request) {
 	utils.NewSuccessResponse(w, "User registered successfully")
 }
 
-func containsCapitalLetter(password string) bool {
-	for _, ch := range password {
-		if unicode.IsUpper(ch) {
-			return true
-		}
-	}
-	return false
-}
-
-func containsSymbol(password string) bool {
-	return psymbolRegex.MatchString(password)
-}
-
 func AuthLogin(w http.ResponseWriter, r *http.Request) {
 	var creds db.Credentials
 	var validationErrors []string
@@ -124,7 +110,7 @@ func AuthLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Validate password
 	if !utils.CheckPasswordHash(creds.Password, user.Password) {
-		validationErrors = append(validationErrors, "Invalid credentials")
+		validationErrors = append(validationErrors, "Invalid Password")
 		utils.NewErrorResponse(w, http.StatusUnauthorized, validationErrors)
 		return
 	}
@@ -201,10 +187,20 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update username if provided
-	if payload.Username != "" {
-		user.Username = payload.Username
-	}
+   // Validate username
+   if payload.Username != "" {
+	     // Check username length
+	     if len(payload.Username) < 3 || len(payload.Username) > 32 {
+		 validationErrors = append(validationErrors, "Username must be between 3 and 32 characters long")
+	     }
+
+	     // Check if username already exists
+	     if _, exists := users[payload.Username]; exists {
+		 validationErrors = append(validationErrors, "User already exists")
+	     }
+
+	      user.Username = payload.Username
+      }
 
 	// Validate and update password
 	if payload.CurrentPassword != "" {
@@ -292,6 +288,7 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 		OTP         string `json:"otp"`
 		NewPassword string `json:"new_password"`
 	}
+	var validationErrors []string
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -303,6 +300,22 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	user, err := db.GetUserByOTP(payload.OTP)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusUnauthorized, []string{"Invalid or expired OTP"})
+		return
+	}
+
+	if len(payload.NewPassword) < 8 || len(payload.NewPassword) > 32 {
+		validationErrors = append(validationErrors, "Password must be at least 8 characters long")
+	}
+
+	if !utils.ContainsCapitalLetter(payload.NewPassword) {
+		validationErrors = append(validationErrors, "Password must contain at least one capital letter")
+	}
+	if !utils.ContainsSymbol(psymbolRegex, payload.NewPassword) {
+		validationErrors = append(validationErrors, "Password must contain at least one symbol")
+	}
+
+	if len(validationErrors) > 0 {
+		utils.NewErrorResponse(w, http.StatusBadRequest, validationErrors)
 		return
 	}
 

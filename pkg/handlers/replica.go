@@ -73,7 +73,7 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 
 	// Publish message to RabbitMQ
 	message := &messaging.Message{
-		Name: "replica-added",
+		Name: messaging.ADD_REPLICA,
 		Body: map[string]string{
 			"name": payload.Name,
 			"url":  payload.URL,
@@ -147,7 +147,7 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 
 	message := &messaging.Message{
 		//Name: "replica-removed",
-		Name: "replica-disabled",
+		Name: messaging.REMOVE_REPLICA,
 		Body: map[string]string{
 			"name": replica.Name,
 			"url":  replica.URL,

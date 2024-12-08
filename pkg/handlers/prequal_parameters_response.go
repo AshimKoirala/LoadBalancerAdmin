@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/AshimKoirala/load-balancer-admin/messaging"
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
 	"github.com/AshimKoirala/load-balancer-admin/utils"
 )
@@ -58,6 +59,21 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 	message := "Prequal Parameter added successfully"
 	if payload.ActivateID != nil {
 		message += fmt.Sprintf(" and entry with ID %d was activated", *payload.ActivateID)
+	}
+
+	rabbitmessage := &messaging.Message{
+		Name: messaging.NEW_PARAMETERS,
+		Body: map[string]interface{}{
+			"data":       payload.Data,
+			"activate_id": payload.ActivateID,
+		},
+	}
+
+	// Publish the message to RabbitMQ
+	err = messaging.PublishMessage(utils.PUBLISHING_QUEUE, rabbitmessage )
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message to RabbitMQ"})
+		return
 	}
 
 	utils.NewSuccessResponse(w, message)

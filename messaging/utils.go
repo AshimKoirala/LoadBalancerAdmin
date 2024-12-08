@@ -2,7 +2,6 @@ package messaging
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -32,13 +31,13 @@ func processMessage(body []byte) {
 	case "parameters-approved":
 		handleParametersApproved(msg.Body)
 	case "parameters-modified":
-		fmt.Println("Parameters modified")
+		handleParametersModified(msg.Body)
 	case "parameters-updated":
-		fmt.Println("Parameters modified")
+		handleParametersUpdated(msg.Body)
 	case "parameters-update-failed":
-		fmt.Println("Failed to update parameters")
+		handleParametersUpdateFailed(msg.Body)
 	case "statistics":
-		fmt.Println("Save statistics")
+		handleStatistics(msg.Body)
 	default:
 		log.Printf("Unknown message type: %s", msg.Name)
 	}

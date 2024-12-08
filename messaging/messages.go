@@ -1,6 +1,11 @@
 package messaging
 
-import "log"
+import (
+	"context"
+	"log"
+
+	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
+)
 
 func handleReplicaAdded(body interface{}) {
 	data, ok := body.(map[string]interface{})
@@ -28,6 +33,30 @@ func handleReplicaRemoved(body interface{}) {
 
 	log.Printf("Replica removed: Name=%s, URL=%s", replicaName, replicaURL)
 
+}
+
+
+func handleParametersApproved(body interface{}) {
+	data, ok := body.(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid message body for prequal-approval: %v", body)
+		return
+	}
+
+	//extract id
+	id, ok := data["id"].(float64)
+	if !ok {
+		log.Printf("Missing or invalid ID in prequal-approval message: %v", body)
+		return
+	}
+	var response db.PrequalParametersResponse
+	var someInt int64 = 0
+	err := db.AddPrequalParametersResponse(context.Background(), response, &someInt)
+	if err != nil {
+		log.Printf("Failed to activate PrequalParametersResponse with ID %d: %v", int(id), err)
+	} else {
+		log.Printf("Successfully activated PrequalParametersResponse with ID %d", int(id))
+	}
 }
 
 func messageDemo() {

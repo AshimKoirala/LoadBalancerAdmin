@@ -183,6 +183,7 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	// Decode request body
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
 		return
 	}
@@ -190,6 +191,7 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	// Change status of the replica
 	err = db.UpdateStatus(r.Context(), payload.Id, payload.Status)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to change replica status"})
 		return
 	}

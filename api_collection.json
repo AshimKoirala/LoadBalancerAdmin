@@ -1,401 +1,370 @@
 {
-	"info": {
-		"_postman_id": "68962058-38f7-4b23-a686-1fa2974d5f06",
-		"name": "Load balancer admin",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "32506630"
-	},
-	"item": [
-		{
-			"name": "Register",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"username\":\"admin\",\n    \"email\":\"admin@gmail.com\",\n    \"password\":\"Password@123\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/register",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"register"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Login",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"username\":\"admin\",\n    \"password\":\"Password@123\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/login",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"login"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Protected",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/admin/protected",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"protected"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Forgot Password",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"email\":\"admin@gmail.com\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/forgot-password",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"forgot-password"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Reset Password",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n   \"otp\":\"\",\n   \"new_password\":\"\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/reset-password",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"reset-password"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get Users",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/admin/users",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"users"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Update Users",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n       \"id\": 1,\n        \"username\": \"admin\",\n        \"email\": \"admin@gmail.com\",\n        \"password\": \"Password@12345\"\n}\n",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/update",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"update"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Add Replica",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"name\": \"testactivitylog07\",\n  \"url\": \"http://localhost:8080/admin/testinglog07\",\n  \"healthcheck_endpoint\": \"http://localhost:8080/admin/status\"\n}\n",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/add-replica",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"add-replica"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get Replica",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/admin/get-replica",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"get-replica"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Change Replica Status",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"id\":14,\n    \"new_status\":\"active\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/change-status",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"change-status"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Delete Replica",
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"id\": 14\n  \n}\n",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "localhost:8080/admin/remove-replica",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"remove-replica"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "bruno",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": ""
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Activity Logs",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/admin/activity_logs",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"activity_logs"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Add Prequal parameters",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"max_life_time\": 50,\n    \"pool_size\": 16,\n    \"probe_factor\": 1.2,\n    \"probe_remove_factor\": 1,\n    \"mu\": 1\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8080/admin/update-prequal-parameters",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"update-prequal-parameters"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get prequal parameters",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/admin/get-prequal-parameters",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"get-prequal-parameters"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get Statistics",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/admin/get-statistics",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"admin",
-						"get-statistics"
-					]
-				}
-			},
-			"response": []
-		}
-	]
+  "info": {
+    "name": "Load balancer admin",
+    "description": "",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Add Replica",
+      "event": [],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/add-replica",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "add-replica"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"MyReplica4\",\n  \"url\": \"http://localhost:9004\",\n  \"health_check_endpoint\": \"ping\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Change Replica Status",
+      "event": [],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/change-status",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "change-status"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"id\":1,\n    \"status\":\"active\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete Replica",
+      "event": [],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/remove-replica",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "remove-replica"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"http://localhost:9004\"\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Forgot Password",
+      "event": [],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/forgot-password",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "forgot-password"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\":\"admin@gmail.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Get Replica",
+      "event": [],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/get-replica",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "get-replica"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Get Users",
+      "event": [],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/users",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "users"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Login",
+      "event": [],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/login",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "login"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\":\"admin\",\n    \"password\":\"Password@123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Protected",
+      "event": [],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/protected",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "protected"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Register",
+      "event": [],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/register",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "register"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\":\"admin\",\n    \"email\":\"admin@gmail.com\",\n    \"password\":\"Password@123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Reset Password",
+      "event": [],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/reset-password",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "reset-password"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n   \"otp\":\"\",\n   \"new_password\":\"\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update Users",
+      "event": [],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": null,
+        "description": "",
+        "url": {
+          "raw": "{{url}}/admin/update",
+          "protocol": "",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "admin",
+            "update"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n   \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@gmail.com\",\n    \"password\": \"Password@12345\"\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "bruno",
+      "event": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": "",
+      "type": "default"
+    }
+  ]
 }

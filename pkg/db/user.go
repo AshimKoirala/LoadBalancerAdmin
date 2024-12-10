@@ -16,14 +16,14 @@ var ctx = context.Background()
 type User struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID        int64     `json:"id" bun:"id,pk,autoincrement"`
-	Username  string    `json:"username" bun:"username,unique,notnull"`
-	Email     string    `json:"email" bun:"email,unique,notnull"`
-	Password  string    `json:"password" bun:"password,notnull"`
-	CreatedAt time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
-	UpdatedAt time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
-	Password_Reset_Token   string    `bun:"password_reset_token"`       
-    OTPExpiry  time.Time `bun:"otp_expiry"` 
+	Id                   int64     `json:"id" bun:"id,pk,autoincrement"`
+	Username             string    `json:"username" bun:"username,unique,notnull"`
+	Email                string    `json:"email" bun:"email,unique,notnull"`
+	Password             string    `json:"password" bun:"password,notnull"`
+	CreatedAt            time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
+	UpdatedAt            time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
+	Password_Reset_Token string    `bun:"password_reset_token"`
+	token_expires_at     time.Time `bun:"token_expires_at"`
 }
 
 type Credentials struct {
@@ -60,14 +60,14 @@ func UpdateUser(user User) error {
 		query = query.Column("password")
 	}
 
-	_, err := query.Where("id = ?", user.ID).Exec(ctx)
+	_, err := query.Where("id = ?", user.Id).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}
 	return nil
 }
 
-func GetUserByID(id int64) (User, error) {
+func GetUserById(id int64) (User, error) {
 	var user User
 	err := db.NewSelect().Model(&user).Where("id = ?", id).Scan(ctx)
 	if err != nil {
@@ -90,12 +90,12 @@ func GetUserByUsername(username string, user *User) error {
 	return nil
 }
 
-func GetUserByOTP(otp string) (User, error) {
+func GetUserByOtp(otp string) (User, error) {
 	var user User
 	err := db.NewSelect().
 		Model(&user).
 		Where("password_reset_token = ?", otp).
-		Where("otp_expiry > ?", time.Now()). // Ensure OTP is still valid
+		Where("token_expires_at > ?", time.Now()). // Ensure OTP is still valid
 		Limit(1).
 		Scan(ctx)
 	if err != nil {
@@ -108,25 +108,25 @@ func UpdatePassword(userID int64, hashedPassword string) error {
 	_, err := db.NewUpdate().
 		Model(&User{}).
 		Set("password = ?", hashedPassword).
-		Set("password_reset_token = NULL").  // Clear the OTP
-		Set("otp_expiry = NULL").
+		Set("password_reset_token = NULL"). // Clear the OTP
+		Set("token_expires_at = NULL").
 		Where("id = ?", userID).
 		Exec(ctx)
 	return err
 }
-func GenerateOTP() string {
-	rand.Seed(time.Now().UnixNano())
+
+func GenerateOtp() string {
 	return fmt.Sprintf("%06d", rand.Intn(1000000)) //6 digit code
 }
 
-func SetPasswordResetOTP(email string) (string, error) {
-	otp := GenerateOTP()
+func SetPasswordResetOtp(email string) (string, error) {
+	otp := GenerateOtp()
 	expiry := time.Now().Add(5 * time.Minute) //for 5 min
 
 	_, err := db.NewUpdate().
 		Model(&User{}).
 		Set("password_reset_token = ?", otp).
-		Set("otp_expiry = ?", expiry).
+		Set("token_expires_at = ?", expiry).
 		Where("LOWER(email) = ?", email).
 		Exec(ctx)
 	if err != nil {

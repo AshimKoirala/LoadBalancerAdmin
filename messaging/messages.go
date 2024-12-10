@@ -2,41 +2,43 @@ package messaging
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
+
 type Messages struct {
 	Name string      `json:"name"`
 	Body interface{} `json:"body"`
 }
 
-func handleReplicaAdded(body interface{}) {
-	
-	bodyBytes, ok := body.([]byte)
-	if !ok {
-		log.Printf("Invalid body type: expected []byte, got %T", body)
-		return
-	}
+func handleReplicaAdded(body string) {
+	fmt.Print(body)
+	// bodyBytes, ok := body.([]byte)
+	// if !ok {
+	// 	log.Printf("Invalid body type: expected []byte, got %T", body)
+	// 	return
+	// }
 
-	var msg Messages
-	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
-		return
-	}
+	// var msg Messages
+	// if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+	// 	log.Printf("Failed to unmarshal message: %v", err)
+	// 	return
+	// }
 
-	data, ok := msg.Body.(map[string]interface{})
-	if !ok {
-		log.Printf("Invalid message body for replica-added: %v", msg.Body)
-		return
-	}
+	// data, ok := msg.Body.(map[string]interface{})
+	// if !ok {
+	// 	log.Printf("Invalid message body for replica-added: %v", msg.Body)
+	// 	return
+	// }
 
-	replicaName, _ := data["name"].(string)
-	replicaURL, _ := data["url"].(string)
+	// replicaName, _ := data["name"].(string)
+	// replicaURL, _ := data["url"].(string)
 
-	log.Printf("Replica added: Name=%s, URL=%s", replicaName, replicaURL)
+	// log.Printf("Replica added: Name=%s, URL=%s", replicaName, replicaURL)
 }
 
 func handleReplicaRemoved(body interface{}) {
-	
+
 	bodyBytes, ok := body.([]byte)
 	if !ok {
 		log.Printf("Invalid body type: expected []byte, got %T", body)
@@ -62,7 +64,7 @@ func handleReplicaRemoved(body interface{}) {
 }
 
 func handleParametersApproved(body interface{}) {
-	
+
 	bodyBytes, ok := body.([]byte)
 	if !ok {
 		log.Printf("Invalid body type: expected []byte, got %T", body)
@@ -86,7 +88,7 @@ func handleParametersApproved(body interface{}) {
 }
 
 func handleParametersModified(body interface{}) {
-	
+
 	bodyBytes, ok := body.([]byte)
 	if !ok {
 		log.Printf("Invalid body type: expected []byte, got %T", body)
@@ -110,7 +112,7 @@ func handleParametersModified(body interface{}) {
 }
 
 func handleParametersUpdated(body interface{}) {
-	
+
 	bodyBytes, ok := body.([]byte)
 	if !ok {
 		log.Printf("Invalid body type: expected []byte, got %T", body)
@@ -158,7 +160,7 @@ func handleParametersUpdateFailed(body interface{}) {
 }
 
 func handleStatistics(body interface{}) {
-	
+
 	bodyBytes, ok := body.([]byte)
 	if !ok {
 		log.Printf("Invalid body type: expected []byte, got %T", body)
@@ -180,7 +182,6 @@ func handleStatistics(body interface{}) {
 	stats, _ := data["statistics"].(map[string]interface{})
 	log.Printf("Statistics received: %v", stats)
 }
-
 
 func messageDemo() {
 	// sending message to admin server when removing replica``

@@ -6,5 +6,5 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     password_reset_token VARCHAR(6),
-    token_expiry TIMESTAMP
+    token_expires_at TIMESTAMP
 );

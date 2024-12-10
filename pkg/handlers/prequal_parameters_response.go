@@ -20,7 +20,7 @@ func GetPrequalParameters(w http.ResponseWriter, r *http.Request) {
 
 	response, err := db.GetPrequalParametersResponse(r.Context())
 	if err != nil {
-		 log.Printf("Error fetching latest prequal parameters response: %v", err)
+		log.Printf("Error fetching latest prequal parameters response: %v", err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch the latest entry"})
 		return
 	}
@@ -37,7 +37,7 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 
 	var payload struct {
 		Data       db.PrequalParametersResponse `json:"data"`
-		ActivateID *int64                       `json:"activate_id,omitempty"`
+		ActivateId *int64                       `json:"activate_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
@@ -50,27 +50,27 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call the database function with the payload
-	err := db.AddPrequalParametersResponse(r.Context(), payload.Data, payload.ActivateID)
+	err := db.AddPrequalParametersResponse(r.Context(), payload.Data, payload.ActivateId)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to create or activate entry"})
 		return
 	}
 
 	message := "Prequal Parameter added successfully"
-	if payload.ActivateID != nil {
-		message += fmt.Sprintf(" and entry with ID %d was activated", *payload.ActivateID)
+	if payload.ActivateId != nil {
+		message += fmt.Sprintf(" and entry with ID %d was activated", *payload.ActivateId)
 	}
 
 	rabbitmessage := &messaging.Message{
 		Name: messaging.NEW_PARAMETERS,
 		Body: map[string]interface{}{
-			"data":       payload.Data,
-			"activate_id": payload.ActivateID,
+			"data":        payload.Data,
+			"activate_id": payload.ActivateId,
 		},
 	}
 
 	// Publish the message to RabbitMQ
-	err = messaging.PublishMessage(utils.PUBLISHING_QUEUE, rabbitmessage )
+	err = messaging.PublishMessage(utils.PUBLISHING_QUEUE, rabbitmessage)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message to RabbitMQ"})
 		return

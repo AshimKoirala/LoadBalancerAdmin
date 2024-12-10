@@ -13,11 +13,11 @@ import (
 type Replica struct {
 	bun.BaseModel `bun:"table:replicas"`
 
-	ID                  int64     `json:"id" bun:"id,pk,autoincrement"`
+	Id                  int64     `json:"id" bun:"id,pk,autoincrement"`
 	Name                string    `json:"name" bun:"name,unique,notnull"`
 	URL                 string    `json:"url" bun:"url,unique,notnull"`
 	Status              string    `bun:"status,notnull"`
-	HealthCheckEndpoint string    `bun:"healthcheck_endpoint,notnull"`
+	HealthCheckEndpoint string    `bun:"health_check_endpoint,notnull"`
 	CreatedAt           time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
 	UpdatedAt           time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
 }
@@ -44,7 +44,7 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 		return fmt.Errorf("error adding replica: %v", err)
 	}
 
-	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is ready to be active", name), &replica.ID); err != nil {
+	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is ready to be active", name), &replica.Id); err != nil {
 		return fmt.Errorf("error logging activity: %v", err)
 	}
 
@@ -53,26 +53,26 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 
 // remove replica by id
 func RemoveReplica(ctx context.Context, id *int64, url *string) error {
-    var replica *Replica
-    var err error
+	var replica *Replica
+	var err error
 
-    if id != nil {
-        log.Printf("Attempting to remove replica with ID: %d", *id)
-        replica, err = GetReplicaByID(ctx, *id)
-    } else if url != nil {
-        log.Printf("Attempting to remove replica with URL: %s", *url)
-        replica, err = GetReplicaByURL(ctx, *url)
-    } else {
-        return fmt.Errorf("either id or url must be provided")
-    }
+	if id != nil {
+		log.Printf("Attempting to remove replica with ID: %d", *id)
+		replica, err = GetReplicaById(ctx, *id)
+	} else if url != nil {
+		log.Printf("Attempting to remove replica with URL: %s", *url)
+		replica, err = GetReplicaByUrl(ctx, *url)
+	} else {
+		return fmt.Errorf("either id or url must be provided")
+	}
 
-    if err != nil {
-        log.Printf("Error fetching replica: %v", err)
-        return fmt.Errorf("error fetching replica: %v", err)
-    }
+	if err != nil {
+		log.Printf("Error fetching replica: %v", err)
+		return fmt.Errorf("error fetching replica: %v", err)
+	}
 
-    // Set status to disabled
-  	query := db.NewUpdate().
+	// Set status to disabled
+	query := db.NewUpdate().
 		Model((*Replica)(nil)).
 		Set("status = ?", "disabled")
 
@@ -86,31 +86,29 @@ func RemoveReplica(ctx context.Context, id *int64, url *string) error {
 	if err != nil {
 		return fmt.Errorf("error disabling replica: %v", err)
 	}
-	log.Printf("Successfully disabled replica with ID: %d", replica.ID)
+	log.Printf("Successfully disabled replica with ID: %d", replica.Id)
 
-    // Delete the replica from the database
-    // _, err = db.NewDelete().Model((*Replica)(nil)).Where("id = ?", id).Exec(ctx)
-    // if err != nil {
-    //     log.Printf("Error deleting replica with ID: %d, error: %v", id, err)
-    //     return fmt.Errorf("error removing replica: %v", err)
-    // }
+	// Delete the replica from the database
+	// _, err = db.NewDelete().Model((*Replica)(nil)).Where("id = ?", id).Exec(ctx)
+	// if err != nil {
+	//     log.Printf("Error deleting replica with ID: %d, error: %v", id, err)
+	//     return fmt.Errorf("error removing replica: %v", err)
+	// }
 
-    // log.Printf("Successfully deleted replica with ID: %d", id)
+	// log.Printf("Successfully deleted replica with ID: %d", id)
 
-    // Log the activity
-    if err := LogActivity(ctx, "warning", fmt.Sprintf("Replica '%s' removed", replica.Name), &replica.ID);
-	 err != nil {
-    log.Printf("Error logging activity for replica '%s': %v", replica.Name, err)
-     }
+	// Log the activity
+	if err := LogActivity(ctx, "warning", fmt.Sprintf("Replica '%s' removed", replica.Name), &replica.Id); err != nil {
+		log.Printf("Error logging activity for replica '%s': %v", replica.Name, err)
+	}
 
-    return nil
+	return nil
 }
 
-
 // Change status of a replica to active, inactive, or disabled
-func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
+func UpdateStatus(ctx context.Context, id int64, newStatus string) error {
 
-	replica, err := GetReplicaByID(ctx ,id)
+	replica, err := GetReplicaById(ctx, id)
 	if err != nil {
 		return fmt.Errorf("error fetching replica: %v", err)
 	}
@@ -134,15 +132,21 @@ func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
 
 	// Log the status change
 	if oldStatus != newStatus {
-		
+
 		// Deactivated status
-		if oldStatus == ACTIVE && newStatus == INACTIVE {
+		if oldStatus == ACTIVE && newStatus == DISABLED {
 			if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is deactivated", replica.Name), &id); err != nil {
 				return fmt.Errorf("error logging activity: %v", err)
 			}
 		}
 
 		// Activated status
+		if oldStatus == DISABLED && newStatus == ACTIVE {
+			if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is queued for activation", replica.Name), &id); err != nil {
+				return fmt.Errorf("error logging activity: %v", err)
+			}
+		}
+
 		if oldStatus == INACTIVE && newStatus == ACTIVE {
 			if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is activated and running", replica.Name), &id); err != nil {
 				return fmt.Errorf("error logging activity: %v", err)
@@ -154,7 +158,7 @@ func ChangeStatus(ctx context.Context, id int64, newStatus string) error {
 }
 
 // find a replica by id
-func GetReplicaByID(ctx context.Context, id int64) (*Replica, error) {
+func GetReplicaById(ctx context.Context, id int64) (*Replica, error) {
 	var replica Replica
 	err := db.NewSelect().Model(&replica).Where("id = ?", id).Scan(ctx)
 	if err != nil {
@@ -164,16 +168,16 @@ func GetReplicaByID(ctx context.Context, id int64) (*Replica, error) {
 	return &replica, nil
 }
 
-func GetReplicaByURL(ctx context.Context, url string) (*Replica, error) {
-    replica := new(Replica)
-    err := db.NewSelect().
-        Model(replica).
-        Where("url = ?", url).
-        Scan(ctx)
-    if err != nil {
-        return nil, fmt.Errorf("error fetching replica by URL: %v", err)
-    }
-    return replica, nil
+func GetReplicaByUrl(ctx context.Context, url string) (*Replica, error) {
+	replica := new(Replica)
+	err := db.NewSelect().
+		Model(replica).
+		Where("url = ?", url).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching replica by URL: %v", err)
+	}
+	return replica, nil
 }
 func GetReplicas(ctx context.Context) ([]Replica, error) {
 	var replicas []Replica

@@ -78,6 +78,7 @@ func AuthRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Insert the user into the database
 	if err := db.InsertUser(user); err != nil {
+		log.Print(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error inserting user into the database"})
 		return
 	}
@@ -174,7 +175,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		ID              int64  `json:"id"`
+		Id              int64  `json:"id"`
 		Username        string `json:"username,omitempty"`
 		CurrentPassword string `json:"current_password,omitempty"`
 		NewPassword     string `json:"new_password,omitempty"`
@@ -190,7 +191,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch user by ID
-	user, err := db.GetUserByID(payload.ID)
+	user, err := db.GetUserById(payload.Id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			validationErrors = append(validationErrors, "User not found")
@@ -268,7 +269,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Generating OTP for email: %s", getEmail.Email) // Log the email
 
 	// Generate and store the OTP
-	otp, err := db.SetPasswordResetOTP(getEmail.Email)
+	otp, err := db.SetPasswordResetOtp(getEmail.Email)
 	if err != nil {
 		log.Printf("Error generating OTP for email %s: %v", getEmail.Email, err) // Log error
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error generating reset OTP"})
@@ -289,8 +290,8 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		OTP         string `json:"otp"`
-		NewPassword string `json:"new_password"`
+		Otp      string `json:"otp"`
+		Password string `json:"new_password"`
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
@@ -300,22 +301,24 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find user by OTP and check expiry
-	user, err := db.GetUserByOTP(payload.OTP)
+	user, err := db.GetUserByOtp(payload.Otp)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusUnauthorized, []string{"Invalid or expired OTP"})
 		return
 	}
 
 	// Hash the new password
-	hashedPassword, err := utils.HashPassword(payload.NewPassword)
+	hashedPassword, err := utils.HashPassword(payload.Password)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error hashing password"})
 		return
 	}
 
 	// Update user's password and clear the OTP
-	err = db.UpdatePassword(user.ID, hashedPassword)
+	err = db.UpdatePassword(user.Id, hashedPassword)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error updating password"})
 		return
 	}

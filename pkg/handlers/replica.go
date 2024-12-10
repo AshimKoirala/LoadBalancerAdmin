@@ -21,52 +21,58 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		Name                string `json:"name"`
 		URL                 string `json:"url"`
-		HealthcheckEndpoint string `json:"healthcheck_endpoint"`
+		HealthCheckEndpoint string `json:"health_check_endpoint"`
 	}
 
 	// Decode request body
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Print(err)
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
 		return
-	    }
-	if payload.Name == "" || payload.URL == "" || payload.HealthcheckEndpoint == "" {
+	}
+	if payload.Name == "" || payload.URL == "" || payload.HealthCheckEndpoint == "" {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"All fields (name, URL, healthcheck_endpoint) must be provided"})
 		return
 	}
 
-	matched, err := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, payload.HealthcheckEndpoint)
+	matched, err := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, payload.HealthCheckEndpoint)
 	if err != nil || !matched {
-		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"HealthcheckEndpoint must contain only alphanumeric characters, underscores (_), or hyphens (-)"})
+		log.Print(err)
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Health Check Endpoint must contain only alphanumeric characters, underscores (_), or hyphens (-)"})
 		return
 	}
-	
+
 	url, err := url.Parse(payload.URL)
 
 	if err != nil {
+		log.Print(err)
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Malformed url"})
 		return
 	}
 
-	resp, err := http.Get(fmt.Sprintf("%s://%s/%s", url.Scheme, url.Host, payload.HealthcheckEndpoint))
+	resp, err := http.Get(fmt.Sprintf("%s://%s/%s", url.Scheme, url.Host, payload.HealthCheckEndpoint))
 
 	if resp.StatusCode != http.StatusOK {
 		// log.Printf("received non-200 response: %d", resp.StatusCode)
 
 		if err != nil {
+			log.Print(err)
 			utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Replica did not pass the healthcheck"})
 			return
 		}
 	}
 	defer resp.Body.Close()
 
-	err = db.AddReplica(r.Context(), payload.Name, payload.URL, payload.HealthcheckEndpoint)
+	err = db.AddReplica(r.Context(), payload.Name, payload.URL, payload.HealthCheckEndpoint)
 	if err != nil {
+		log.Print(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{err.Error()})
 		return
 	}
 
-	replica, err := db.GetReplicaByName(r.Context(), payload.Name) 
+	replica, err := db.GetReplicaByName(r.Context(), payload.Name)
 	if err != nil {
+		log.Print(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch added replica details"})
 		return
 	}
@@ -86,14 +92,14 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.NewSuccessResponse(w,replica)
+	utils.NewSuccessResponse(w, replica)
 }
 
 func Status(w http.ResponseWriter, r *http.Request) {
 	log.Println("Replica status checking..")
 }
 
-func GetReplicas(w http.ResponseWriter, r *http.Request){
+func GetReplicas(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
 		return
@@ -114,11 +120,11 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload struct {
-		ID  *int64  `json:"id,omitempty"`
-		URL *string `json:"url,omitempty"`
+		Id  *int64  `json:"id,omitempty"`
+		Url *string `json:"url,omitempty"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || (payload.ID == nil && payload.URL == nil) {
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || (payload.Id == nil && payload.Url == nil) {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid or missing ID/URL in request payload"})
 		return
 	}
@@ -126,10 +132,10 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 	var replica *db.Replica
 	var err error
 
-	if payload.ID != nil {
-		replica, err = db.GetReplicaByID(r.Context(), *payload.ID)
-	} else if payload.URL != nil {
-		replica, err = db.GetReplicaByURL(r.Context(), *payload.URL)
+	if payload.Id != nil {
+		replica, err = db.GetReplicaById(r.Context(), *payload.Id)
+	} else if payload.Url != nil {
+		replica, err = db.GetReplicaByUrl(r.Context(), *payload.Url)
 	}
 
 	if err != nil {
@@ -138,7 +144,7 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove replica from the database
-	err = db.RemoveReplica(r.Context(), payload.ID, payload.URL)
+	err = db.RemoveReplica(r.Context(), payload.Id, payload.Url)
 	if err != nil {
 		log.Printf("Error disabling replica: %v", err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to disable replica"})
@@ -166,12 +172,12 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 
 func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
-	    utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
+		utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
 		return
 	}
 	var payload struct {
-		ID        int64  `json:"id"`
-		NewStatus string `json:"new_status"`
+		Id     int64  `json:"id"`
+		Status string `json:"status"`
 	}
 
 	// Decode request body
@@ -182,7 +188,7 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Change status of the replica
-	err = db.ChangeStatus(r.Context(), payload.ID, payload.NewStatus)
+	err = db.UpdateStatus(r.Context(), payload.Id, payload.Status)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to change replica status"})
 		return

@@ -1,27 +1,59 @@
 package messaging
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 )
 
-func handleReplicaAdded(body interface{}) {
-	data, ok := body.(map[string]interface{})
-	if !ok {
-		log.Printf("Invalid message body for replica-added: %v", body)
-		return
-	}
+type Messages struct {
+	Name string      `json:"name"`
+	Body interface{} `json:"body"`
+}
 
-	replicaName, _ := data["name"].(string)
-	replicaURL, _ := data["url"].(string)
+func handleReplicaAdded(body string) {
+	fmt.Print(body)
+	// bodyBytes, ok := body.([]byte)
+	// if !ok {
+	// 	log.Printf("Invalid body type: expected []byte, got %T", body)
+	// 	return
+	// }
 
-	log.Printf("Replica added: Name=%s, URL=%s", replicaName, replicaURL)
+	// var msg Messages
+	// if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+	// 	log.Printf("Failed to unmarshal message: %v", err)
+	// 	return
+	// }
 
+	// data, ok := msg.Body.(map[string]interface{})
+	// if !ok {
+	// 	log.Printf("Invalid message body for replica-added: %v", msg.Body)
+	// 	return
+	// }
+
+	// replicaName, _ := data["name"].(string)
+	// replicaURL, _ := data["url"].(string)
+
+	// log.Printf("Replica added: Name=%s, URL=%s", replicaName, replicaURL)
 }
 
 func handleReplicaRemoved(body interface{}) {
-	data, ok := body.(map[string]interface{})
+
+	bodyBytes, ok := body.([]byte)
 	if !ok {
-		log.Printf("Invalid message body for replica-removed: %v", body)
+		log.Printf("Invalid body type: expected []byte, got %T", body)
+		return
+	}
+
+	var msg Messages
+	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+		log.Printf("Failed to unmarshal message: %v", err)
+		return
+	}
+
+	data, ok := msg.Body.(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid message body for replica-removed: %v", msg.Body)
 		return
 	}
 
@@ -29,13 +61,25 @@ func handleReplicaRemoved(body interface{}) {
 	replicaURL, _ := data["url"].(string)
 
 	log.Printf("Replica removed: Name=%s, URL=%s", replicaName, replicaURL)
-
 }
 
 func handleParametersApproved(body interface{}) {
-	data, ok := body.(map[string]interface{})
+
+	bodyBytes, ok := body.([]byte)
 	if !ok {
-		log.Printf("Invalid message body for parameters-approved: %v", body)
+		log.Printf("Invalid body type: expected []byte, got %T", body)
+		return
+	}
+
+	var msg Messages
+	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+		log.Printf("Failed to unmarshal message: %v", err)
+		return
+	}
+
+	data, ok := msg.Body.(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid message body for parameters-approved: %v", msg.Body)
 		return
 	}
 
@@ -44,9 +88,22 @@ func handleParametersApproved(body interface{}) {
 }
 
 func handleParametersModified(body interface{}) {
-	data, ok := body.(map[string]interface{})
+
+	bodyBytes, ok := body.([]byte)
 	if !ok {
-		log.Printf("Invalid message body for parameters-modified: %v", body)
+		log.Printf("Invalid body type: expected []byte, got %T", body)
+		return
+	}
+
+	var msg Messages
+	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+		log.Printf("Failed to unmarshal message: %v", err)
+		return
+	}
+
+	data, ok := msg.Body.(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid message body for parameters-modified: %v", msg.Body)
 		return
 	}
 
@@ -55,9 +112,22 @@ func handleParametersModified(body interface{}) {
 }
 
 func handleParametersUpdated(body interface{}) {
-	data, ok := body.(map[string]interface{})
+
+	bodyBytes, ok := body.([]byte)
 	if !ok {
-		log.Printf("Invalid message body for parameters-updated: %v", body)
+		log.Printf("Invalid body type: expected []byte, got %T", body)
+		return
+	}
+
+	var msg Message
+	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+		log.Printf("Failed to unmarshal message: %v", err)
+		return
+	}
+
+	data, ok := msg.Body.(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid message body for parameters-updated: %v", msg.Body)
 		return
 	}
 
@@ -66,9 +136,22 @@ func handleParametersUpdated(body interface{}) {
 }
 
 func handleParametersUpdateFailed(body interface{}) {
-	data, ok := body.(map[string]interface{})
+
+	bodyBytes, ok := body.([]byte)
 	if !ok {
-		log.Printf("Invalid message body for parameters-update-failed: %v", body)
+		log.Printf("Invalid body type: expected []byte, got %T", body)
+		return
+	}
+
+	var msg Messages
+	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+		log.Printf("Failed to unmarshal message: %v", err)
+		return
+	}
+
+	data, ok := msg.Body.(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid message body for parameters-update-failed: %v", msg.Body)
 		return
 	}
 
@@ -77,9 +160,22 @@ func handleParametersUpdateFailed(body interface{}) {
 }
 
 func handleStatistics(body interface{}) {
-	data, ok := body.(map[string]interface{})
+
+	bodyBytes, ok := body.([]byte)
 	if !ok {
-		log.Printf("Invalid message body for statistics: %v", body)
+		log.Printf("Invalid body type: expected []byte, got %T", body)
+		return
+	}
+
+	var msg Messages
+	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+		log.Printf("Failed to unmarshal message: %v", err)
+		return
+	}
+
+	data, ok := msg.Body.(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid message body for statistics: %v", msg.Body)
 		return
 	}
 

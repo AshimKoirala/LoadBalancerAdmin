@@ -17,6 +17,7 @@ type Response struct {
 
 func NewSuccessResponse(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	response := Response{
 		Success: true,
 		Data:    data,
@@ -43,7 +44,7 @@ func NewEmailResponse(to string, subject string, body string) error {
 	if senderEmail == "" || senderPassword == "" || smtpHost == "" || smtpPort == "" {
 		return fmt.Errorf("SMTP credentials are not set")
 	}
-	
+
 	message := fmt.Sprintf("Subject: %s\n\n%s", subject, body)
 
 	// authentication for the SMTP server
@@ -60,10 +61,10 @@ func NewEmailResponse(to string, subject string, body string) error {
 }
 
 func NewSuccessResponseWithData(w http.ResponseWriter, data interface{}) {
-    response := map[string]interface{}{
-        "success": true,
-        "data":    data,
-    }
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+	response := map[string]interface{}{
+		"success": true,
+		"data":    data,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }

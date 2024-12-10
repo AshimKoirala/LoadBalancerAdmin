@@ -16,8 +16,8 @@ type PrequalParametersResponse struct {
 	MaxLifeTime       int       `bun:"max_life_time" json:"max_life_time"`
 	PoolSize          int       `bun:"pool_size" json:"pool_size"`
 	ProbeFactor       float64   `bun:"probe_factor" json:"probe_factor"`
-	ProbeRemoveFactor int   `bun:"probe_remove_factor" json:"probe_remove_factor"`
-	Mu                int   `bun:"mu" json:"mu"`
+	ProbeRemoveFactor int       `bun:"probe_remove_factor" json:"probe_remove_factor"`
+	Mu                int       `bun:"mu" json:"mu"`
 	CreatedAt         time.Time `bun:"created_at,default:current_timestamp" json:"created_at"`
 	UpdatedAt         time.Time `bun:"updated_at,default:current_timestamp" json:"updated_at"`
 	Status            string    `bun:"status,default:inactive" json:"status"`
@@ -55,7 +55,7 @@ func GetPrequalParametersResponse(ctx context.Context) (PrequalParametersRespons
 }
 
 // Insert new row
-func AddPrequalParametersResponse(ctx context.Context, response PrequalParametersResponse, activateID *int64) error {
+func AddPrequalParametersResponse(ctx context.Context, response PrequalParametersResponse, activateId *int64) error {
 	var count int
 	count, err := db.NewSelect().
 		Model((*PrequalParametersResponse)(nil)).
@@ -77,15 +77,15 @@ func AddPrequalParametersResponse(ctx context.Context, response PrequalParameter
 	}
 
 	// If an activateID is provided, activate the specified entry
-	if activateID != nil {
+	if activateId != nil {
 		// Fetch the specified entry
 		var activateResponse PrequalParametersResponse
 		err := db.NewSelect().
 			Model(&activateResponse).
-			Where("id = ?", *activateID).
+			Where("id = ?", *activateId).
 			Scan(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to fetch prequal parameters with ID %d: %v", *activateID, err)
+			return fmt.Errorf("failed to fetch prequal parameters with ID %d: %v", *activateId, err)
 		}
 
 		// Ensure the entry is currently inactive
@@ -107,20 +107,20 @@ func AddPrequalParametersResponse(ctx context.Context, response PrequalParameter
 			Model(&activateResponse).
 			Set("status = ?", "active").
 			Set("updated_at = ?", time.Now()).
-			Where("id = ?", *activateID).
+			Where("id = ?", *activateId).
 			Exec(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to activate Prequal Parameters with ID %d: %v", *activateID, err)
+			return fmt.Errorf("failed to activate Prequal Parameters with ID %d: %v", *activateId, err)
 		}
 
-		// Log 
-		activationMessage := fmt.Sprintf("Prequal Parameters with ID %d is now active", *activateID)
-		if logErr := LogActivity(ctx, "success", activationMessage, activateID); logErr != nil {
+		// Log
+		activationMessage := fmt.Sprintf("Prequal Parameters with ID %d is now active", *activateId)
+		if logErr := LogActivity(ctx, "success", activationMessage, activateId); logErr != nil {
 			return fmt.Errorf("failed to log activity for activation: %v", logErr)
 		}
 	}
 
-	// Log 
+	// Log
 	message := fmt.Sprintf(
 		"Prequal request added: MaxLifeTime=%d, PoolSize=%d, ProbeFactor=%.2f, ProbeRemoveFactor=%d, Mu=%d",
 		response.MaxLifeTime, response.PoolSize, response.ProbeFactor, response.ProbeRemoveFactor, response.Mu,
@@ -131,4 +131,3 @@ func AddPrequalParametersResponse(ctx context.Context, response PrequalParameter
 
 	return nil
 }
-

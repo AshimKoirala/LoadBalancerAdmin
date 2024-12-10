@@ -24,8 +24,9 @@ func processMessage(body []byte) {
 	}
 
 	switch msg.Name {
-	case "replica-added":
-		handleReplicaAdded(msg.Body)
+	case ADDED_REPLICA:
+		return
+		// handleReplicaAdded(msg.Body)
 	case "replica-removed":
 		handleReplicaRemoved(msg.Body)
 	case "parameters-approved":

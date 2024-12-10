@@ -77,6 +77,7 @@ func AuthRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Insert the user into the database
 	if err := db.InsertUser(user); err != nil {
+		log.Print(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error inserting user into the database"})
 		return
 	}
@@ -160,7 +161,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		ID              int64  `json:"id"`
+		Id              int64  `json:"id"`
 		Username        string `json:"username,omitempty"`
 		CurrentPassword string `json:"current_password,omitempty"`
 		NewPassword     string `json:"new_password,omitempty"`
@@ -176,7 +177,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch user by ID
-	user, err := db.GetUserByID(payload.ID)
+	user, err := db.GetUserById(payload.Id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			validationErrors = append(validationErrors, "User not found")
@@ -187,20 +188,20 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-   // Validate username
-   if payload.Username != "" {
-	     // Check username length
-	     if len(payload.Username) < 3 || len(payload.Username) > 32 {
-		 validationErrors = append(validationErrors, "Username must be between 3 and 32 characters long")
-	     }
+	// Validate username
+	if payload.Username != "" {
+		// Check username length
+		if len(payload.Username) < 3 || len(payload.Username) > 32 {
+			validationErrors = append(validationErrors, "Username must be between 3 and 32 characters long")
+		}
 
-	     // Check if username already exists
-	     if _, exists := users[payload.Username]; exists {
-		 validationErrors = append(validationErrors, "User already exists")
-	     }
+		// Check if username already exists
+		if _, exists := users[payload.Username]; exists {
+			validationErrors = append(validationErrors, "User already exists")
+		}
 
-	      user.Username = payload.Username
-      }
+		user.Username = payload.Username
+	}
 
 	// Validate and update password
 	if payload.CurrentPassword != "" {
@@ -264,7 +265,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Generating OTP for email: %s", getEmail.Email) // Log the email
 
 	// Generate and store the OTP
-	otp, err := db.SetPasswordResetOTP(getEmail.Email)
+	otp, err := db.SetPasswordResetOtp(getEmail.Email)
 	if err != nil {
 		log.Printf("Error generating OTP for email %s: %v", getEmail.Email, err) // Log error
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error generating reset OTP"})
@@ -285,7 +286,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		OTP         string `json:"otp"`
+		Otp         string `json:"otp"`
 		NewPassword string `json:"new_password"`
 	}
 	var validationErrors []string
@@ -297,7 +298,7 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find user by OTP and check expiry
-	user, err := db.GetUserByOTP(payload.OTP)
+	user, err := db.GetUserByOtp(payload.Otp)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusUnauthorized, []string{"Invalid or expired OTP"})
 		return
@@ -322,13 +323,15 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Hash the new password
 	hashedPassword, err := utils.HashPassword(payload.NewPassword)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error hashing password"})
 		return
 	}
 
 	// Update user's password and clear the OTP
-	err = db.UpdatePassword(user.ID, hashedPassword)
+	err = db.UpdatePassword(user.Id, hashedPassword)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error updating password"})
 		return
 	}

@@ -86,7 +86,7 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	if err := messaging.PublishMessage(utils.PUBLISHING_QUEUE, message); err != nil {
+	if err := messaging.PublishMessage(messaging.PUBLISHING_QUEUE, message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
 		return
@@ -160,7 +160,7 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	if err := messaging.PublishMessage(utils.PUBLISHING_QUEUE, message); err != nil {
+	if err := messaging.PublishMessage(messaging.PUBLISHING_QUEUE, message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
 		return

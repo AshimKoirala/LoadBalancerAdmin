@@ -27,17 +27,13 @@ func processMessage(body []byte) {
 	case ADDED_REPLICA:
 		return
 		// handleReplicaAdded(msg.Body)
-	case "replica-removed":
+	case REMOVED_REPLICA:
 		handleReplicaRemoved(msg.Body)
-	case "parameters-approved":
-		handleParametersApproved(msg.Body)
-	case "parameters-modified":
-		handleParametersModified(msg.Body)
-	case "parameters-updated":
+	case PARAMETERS_UPDATED:
 		handleParametersUpdated(msg.Body)
-	case "parameters-update-failed":
+	case PARAMETERS_UPDATE_FAILED:
 		handleParametersUpdateFailed(msg.Body)
-	case "statistics":
+	case STATISTICS:
 		handleStatistics(msg.Body)
 	default:
 		log.Printf("Unknown message type: %s", msg.Name)

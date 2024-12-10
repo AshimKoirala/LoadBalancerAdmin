@@ -63,54 +63,6 @@ func handleReplicaRemoved(body interface{}) {
 	log.Printf("Replica removed: Name=%s, URL=%s", replicaName, replicaURL)
 }
 
-func handleParametersApproved(body interface{}) {
-
-	bodyBytes, ok := body.([]byte)
-	if !ok {
-		log.Printf("Invalid body type: expected []byte, got %T", body)
-		return
-	}
-
-	var msg Messages
-	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
-		return
-	}
-
-	data, ok := msg.Body.(map[string]interface{})
-	if !ok {
-		log.Printf("Invalid message body for parameters-approved: %v", msg.Body)
-		return
-	}
-
-	id, _ := data["id"].(float64)
-	log.Printf("Parameters approved for ID=%d", int64(id))
-}
-
-func handleParametersModified(body interface{}) {
-
-	bodyBytes, ok := body.([]byte)
-	if !ok {
-		log.Printf("Invalid body type: expected []byte, got %T", body)
-		return
-	}
-
-	var msg Messages
-	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
-		return
-	}
-
-	data, ok := msg.Body.(map[string]interface{})
-	if !ok {
-		log.Printf("Invalid message body for parameters-modified: %v", msg.Body)
-		return
-	}
-
-	modifiedFields, _ := data["fields"].([]interface{})
-	log.Printf("Parameters modified: %v", modifiedFields)
-}
-
 func handleParametersUpdated(body interface{}) {
 
 	bodyBytes, ok := body.([]byte)

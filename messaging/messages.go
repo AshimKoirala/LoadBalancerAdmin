@@ -1,13 +1,32 @@
 package messaging
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
 )
+
+type Message struct {
+	Name string      `json:"name"`
+	Body interface{} `json:"body"`
+}
+
+type ReplicaStatisticsParameters struct {
+	SuccessfulRequests int
+	FailedRequests     int
+}
+
+type statDataArr struct {
+	ReplicaName string                      `json:"replica_name"`
+	Statistics  ReplicaStatisticsParameters `json:"statistics"`
+}
+
+type StatMessage struct {
+	Name string        `json:"name"`
+	Body []statDataArr `json:"body"`
+}
 
 type Messages struct {
 	Name string      `json:"name"`
@@ -114,33 +133,33 @@ func handleParametersUpdateFailed(body interface{}) {
 	log.Printf("Failed to update parameters: %s", errorMessage)
 }
 
-func handleStatistics(body string) {
-	decodedBytes, err := base64.StdEncoding.DecodeString(body)
-	if err != nil {
-		log.Fatalf("Failed to decode Base64: %v", err)
-	}
+func handleStatistics(body []statDataArr) {
+	// decodedBytes, err := base64.StdEncoding.DecodeString(body)
+	// if err != nil {
+	// 	log.Fatalf("Failed to decode Base64: %v", err)
+	// }
 
-	type ReplicaStatistics struct {
-		SuccessfulRequests int `json:"successful_requests"`
-		FailedRequests     int `json:"failed_requests"`
-	}
+	// type ReplicaStatistics struct {
+	// 	SuccessfulRequests int `json:"successful_requests"`
+	// 	FailedRequests     int `json:"failed_requests"`
+	// }
 
-	type ReplicaStatisticsData struct {
-		ReplicaName string            `json:"replica_name"`
-		Statistics  ReplicaStatistics `json:"statistics"`
-	}
+	// type ReplicaStatisticsData struct {
+	// 	ReplicaName string            `json:"replica_name"`
+	// 	Statistics  ReplicaStatistics `json:"statistics"`
+	// }
 
-	var replicaStatisticsMessages []ReplicaStatisticsData
+	// var replicaStatisticsMessages []ReplicaStatisticsData
 
-	err = json.Unmarshal(decodedBytes, &replicaStatisticsMessages)
-	if err != nil {
-		fmt.Printf("Failed to unmarshal JSON: %v\n", err)
-		return
-	}
+	// err = json.Unmarshal(decodedBytes, &replicaStatisticsMessages)
+	// if err != nil {
+	// 	fmt.Printf("Failed to unmarshal JSON: %v\n", err)
+	// 	return
+	// }
 
 	var statisticsDatum []db.StatisticsData
 
-	for _, replica := range replicaStatisticsMessages {
+	for _, replica := range body {
 		data := db.StatisticsData{
 			URL:                replica.ReplicaName,
 			SuccessfulRequests: int64(replica.Statistics.SuccessfulRequests),
@@ -152,7 +171,7 @@ func handleStatistics(body string) {
 			replica.ReplicaName, replica.Statistics.SuccessfulRequests, replica.Statistics.FailedRequests)
 	}
 
-	err = db.BatchAddStatistics(&statisticsDatum)
+	err := db.BatchAddStatistics(&statisticsDatum)
 
 	if err != nil {
 		log.Printf("Failed to update statistics: %s", err)

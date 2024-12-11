@@ -52,16 +52,17 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.Get(fmt.Sprintf("%s://%s/%s", url.Scheme, url.Host, payload.HealthCheckEndpoint))
 
-	if resp.StatusCode != http.StatusOK {
-		// log.Printf("received non-200 response: %d", resp.StatusCode)
-
-		if err != nil {
-			log.Print(err)
-			utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Replica did not pass the healthcheck"})
-			return
-		}
+	if err != nil {
+		log.Print(err)
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Replica did not pass the healthcheck"})
+		return
 	}
-	defer resp.Body.Close()
+
+	// if resp.StatusCode != http.StatusOK || err != nil {
+	// 	// log.Printf("received non-200 response: %d", resp.StatusCode)
+
+	// }
+	resp.Body.Close()
 
 	err = db.AddReplica(r.Context(), payload.Name, payload.URL, payload.HealthCheckEndpoint)
 	if err != nil {

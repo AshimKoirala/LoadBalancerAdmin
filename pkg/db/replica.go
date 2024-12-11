@@ -16,8 +16,8 @@ type Replica struct {
 	Id                  int64     `json:"id" bun:"id,pk,autoincrement"`
 	Name                string    `json:"name" bun:"name,unique,notnull"`
 	URL                 string    `json:"url" bun:"url,unique,notnull"`
-	Status              string    `bun:"status,notnull"`
-	HealthCheckEndpoint string    `bun:"health_check_endpoint,notnull"`
+	Status              string    `json:"status" bun:"status,notnull"`
+	HealthCheckEndpoint string    `json:"health_check_point" bun:"health_check_endpoint,notnull"`
 	CreatedAt           time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
 	UpdatedAt           time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
 }

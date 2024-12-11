@@ -11,15 +11,15 @@ import (
 type ActivityLog struct {
 	bun.BaseModel `bun:"table:activity_logs"`
 
-	Id        int64     `bun:"id,pk,autoincrement"`
-	Type      string    `bun:"type,notnull"`
-	Message   string    `bun:"message,notnull"`
-	ReplicaId *int64    `bun:"replica_id"`
-	CreatedAt time.Time `bun:"created_at,default:current_timestamp"`
-	UpdatedAt time.Time `bun:"updated_at,default:current_timestamp"`
+	Id        int64     `json:"id" bun:"id,pk,autoincrement"`
+	Type      string    `json:"type" bun:"type,notnull"`
+	Message   string    `json:"message" bun:"message,notnull"`
+	ReplicaId *int64    `json:"replica_id" bun:"replica_id"`
+	CreatedAt time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
+	UpdatedAt time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
 
 	Replica *Replica `bun:"rel:belongs-to,join:replica_id=id"`
-}	
+}
 
 // adds new activity log entry.
 func AddActivityLog(ctx context.Context, log ActivityLog) error {

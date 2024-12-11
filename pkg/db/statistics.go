@@ -51,8 +51,8 @@ func BatchAddStatistics(statistics *[]StatisticsData) error {
 			UpdatedAt:          time.Now(),
 		}
 		_, err := db.NewInsert().Model(&stat).On("CONFLICT (url) DO UPDATE").
-			Set("successful_requests = statistics.successful_requests + ?", statistic.SuccessfulRequests).
-			Set("failed_requests = statistics.failed_requests + ?", statistic.FailedRequests).
+			Set("successful_requests = ?", statistic.SuccessfulRequests).
+			Set("failed_requests = ?", statistic.FailedRequests).
 			Set("updated_at = NOW()").
 			Exec(ctx)
 
@@ -69,4 +69,14 @@ func BatchAddStatistics(statistics *[]StatisticsData) error {
 
 	log.Printf("Statistics updated/inserted successfully")
 	return nil
+}
+
+func GetStatistics(ctx context.Context) ([]Statistics, error) {
+	var stats []Statistics
+	err := db.NewSelect().Model(&stats).Scan(ctx)
+	if err != nil {
+		log.Printf("Error fetching statistics: %v", err)
+		return nil, err
+	}
+	return stats, nil
 }

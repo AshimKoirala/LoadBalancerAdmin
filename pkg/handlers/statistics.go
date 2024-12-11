@@ -1,8 +1,10 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
+	"github.com/AshimKoirala/load-balancer-admin/utils"
 )
 
 type StatisticsResponse struct {
@@ -20,24 +22,18 @@ type ReplicaStatistics struct {
 	FailedRequests     int    `json:"failed_requests"`
 }
 
-func DummyStatistics(w http.ResponseWriter, r *http.Request) {
+func GetStatistics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Static data
-	response := StatisticsResponse{
-		Success: true,
-	}
-	response.Total.SuccessfulRequests = 1000
-	response.Total.FailedRequests = 200
-	response.Data = []ReplicaStatistics{
-		{Name: "replica 1", SuccessfulRequests: 500, FailedRequests: 20},
-		{Name: "replica 2", SuccessfulRequests: 500, FailedRequests: 180},
+	stats, err := db.GetStatistics(r.Context())
+
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch statistics"})
+		return
 	}
 
-	// Set response header and write JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	utils.NewSuccessResponse(w, stats)
 }

@@ -33,8 +33,8 @@ func Handler() {
 	mux.HandleFunc("/admin/activity-logs", GetActivityLogs)
 	mux.HandleFunc("/admin/update-prequal-parameters", AddPrequalParameters)
 	mux.HandleFunc("/admin/get-prequal-parameters", GetPrequalParameters)
-	mux.HandleFunc("/admin/get-statistics", DummyStatistics)
-	
+	mux.HandleFunc("/admin/get-statistics", GetStatistics)
+
 	// Wrap the entire mux with CORS
 	handlerWithCORS := middleware.CORS(mux)
 

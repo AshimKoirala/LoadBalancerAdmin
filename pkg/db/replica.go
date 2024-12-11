@@ -107,7 +107,6 @@ func RemoveReplica(ctx context.Context, id *int64, url *string) error {
 
 // Change status of a replica to active, inactive, or disabled
 func UpdateStatus(ctx context.Context, id int64, newStatus string) error {
-
 	replica, err := GetReplicaById(ctx, id)
 	if err != nil {
 		return fmt.Errorf("error fetching replica: %v", err)

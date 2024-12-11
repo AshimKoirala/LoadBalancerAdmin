@@ -19,7 +19,7 @@ type ActivityLog struct {
 	UpdatedAt time.Time `bun:"updated_at,default:current_timestamp"`
 
 	Replica *Replica `bun:"rel:belongs-to,join:replica_id=id"`
-}
+}	
 
 // adds new activity log entry.
 func AddActivityLog(ctx context.Context, log ActivityLog) error {

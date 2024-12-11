@@ -1,0 +1,8 @@
+CREATE TABLE statistics (
+    id SERIAL PRIMARY KEY,
+    url VARCHAR(255) UNIQUE NOT NULL,
+    successful_requests INT DEFAULT 0,
+    failed_requests INT DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

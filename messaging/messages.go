@@ -1,9 +1,12 @@
 package messaging
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
 )
 
 type Messages struct {
@@ -111,28 +114,70 @@ func handleParametersUpdateFailed(body interface{}) {
 	log.Printf("Failed to update parameters: %s", errorMessage)
 }
 
-func handleStatistics(body interface{}) {
+func handleStatistics(body string) {
+	decodedBytes, err := base64.StdEncoding.DecodeString(body)
+	if err != nil {
+		log.Fatalf("Failed to decode Base64: %v", err)
+	}
 
-	bodyBytes, ok := body.([]byte)
-	if !ok {
-		log.Printf("Invalid body type: expected []byte, got %T", body)
+	type ReplicaStatistics struct {
+		SuccessfulRequests int `json:"successful_requests"`
+		FailedRequests     int `json:"failed_requests"`
+	}
+
+	type ReplicaStatisticsData struct {
+		ReplicaName string            `json:"replica_name"`
+		Statistics  ReplicaStatistics `json:"statistics"`
+	}
+
+	var replicaStatisticsMessages []ReplicaStatisticsData
+
+	err = json.Unmarshal(decodedBytes, &replicaStatisticsMessages)
+	if err != nil {
+		fmt.Printf("Failed to unmarshal JSON: %v\n", err)
 		return
 	}
 
-	var msg Messages
-	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
-		return
+	var statisticsDatum []db.StatisticsData
+
+	for _, replica := range replicaStatisticsMessages {
+		data := db.StatisticsData{
+			URL:                replica.ReplicaName,
+			SuccessfulRequests: int64(replica.Statistics.SuccessfulRequests),
+			FailedRequests:     int64(replica.Statistics.FailedRequests),
+		}
+
+		statisticsDatum = append(statisticsDatum, data)
+		fmt.Printf("Replica: %s, SuccessfulRequests: %d, FailedRequests: %d\n",
+			replica.ReplicaName, replica.Statistics.SuccessfulRequests, replica.Statistics.FailedRequests)
 	}
 
-	data, ok := msg.Body.(map[string]interface{})
-	if !ok {
-		log.Printf("Invalid message body for statistics: %v", msg.Body)
+	err = db.BatchAddStatistics(&statisticsDatum)
+
+	if err != nil {
+		log.Printf("Failed to update statistics: %s", err)
 		return
 	}
+	// bodyBytes, ok := body.([]byte)
+	// if !ok {
+	// 	log.Printf("Invalid body type: expected []byte, got %T", body)
+	// 	return
+	// }
 
-	stats, _ := data["statistics"].(map[string]interface{})
-	log.Printf("Statistics received: %v", stats)
+	// var msg Messages
+	// if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+	// 	log.Printf("Failed to unmarshal message: %v", err)
+	// 	return
+	// }
+
+	// data, ok := msg.Body.(map[string]interface{})
+	// if !ok {
+	// 	log.Printf("Invalid message body for statistics: %v", msg.Body)
+	// 	return
+	// }
+
+	// stats, _ := data["statistics"].(map[string]interface{})
+	// log.Printf("Statistics received: %v", stats)
 }
 
 func messageDemo() {

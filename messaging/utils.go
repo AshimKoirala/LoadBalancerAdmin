@@ -34,7 +34,7 @@ func processMessage(body []byte) {
 	case PARAMETERS_UPDATE_FAILED:
 		handleParametersUpdateFailed(msg.Body)
 	case STATISTICS:
-		handleStatistics(msg.Body)
+		handleStatistics(msg.Body.(string))
 	default:
 		log.Printf("Unknown message type: %s", msg.Name)
 	}

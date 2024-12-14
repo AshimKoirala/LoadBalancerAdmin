@@ -12,7 +12,7 @@ func failOnError(err error, msg string) {
 }
 
 func processMessage(body []byte) {
-	var msg StatMessage
+	var msg Message
 
 	if err := json.Unmarshal(body, &msg); err != nil {
 		log.Printf("Failed to unmarshal message: %v", err)
@@ -30,7 +30,12 @@ func processMessage(body []byte) {
 	case PARAMETERS_UPDATE_FAILED:
 		handleParametersUpdateFailed(body)
 	case STATISTICS:
-		handleStatistics(body)
+		var stmsg StatMessage
+		if err := json.Unmarshal(body, &stmsg); err != nil {
+			log.Printf("Failed to unmarshal stat message: %v", err)
+			return
+		}
+		handleStatistics(stmsg.Body)
 	default:
 		log.Printf("Unknown message type: %s", msg.Name)
 	}

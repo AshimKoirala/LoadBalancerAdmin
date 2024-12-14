@@ -103,35 +103,27 @@ func handleParametersUpdateFailed(body []byte) {
 	log.Printf("Failed to update parameters: %s", errorMessage)
 }
 
-func handleStatistics(body []byte) {
-	var msg Message
-	if err := json.Unmarshal(body, &msg); err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
-		return
-	}
-
-	var statData []statDataArr
-	if err := json.Unmarshal([]byte(fmt.Sprintf("%v", msg.Body)), &statData); err != nil {
-		log.Printf("Failed to parse statistics body: %v", err)
-		return
-	}
-
+func handleStatistics(body []statDataArr) {
 	var statisticsDatum []db.StatisticsData
-	for _, replica := range statData {
+
+	for _, replica := range body {
 		data := db.StatisticsData{
 			URL:                replica.ReplicaName,
 			SuccessfulRequests: int64(replica.Statistics.SuccessfulRequests),
 			FailedRequests:     int64(replica.Statistics.FailedRequests),
 		}
+
 		statisticsDatum = append(statisticsDatum, data)
+		fmt.Printf("Replica: %s, SuccessfulRequests: %d, FailedRequests: %d\n",
+			replica.ReplicaName, replica.Statistics.SuccessfulRequests, replica.Statistics.FailedRequests)
 	}
 
-	if err := db.BatchAddStatistics(&statisticsDatum); err != nil {
-		log.Printf("Failed to update statistics in DB: %v", err)
+	err := db.BatchAddStatistics(&statisticsDatum)
+
+	if err != nil {
+		log.Printf("Failed to update statistics: %s", err)
 		return
 	}
-
-	log.Printf("Statistics updated successfully for %d replicas", len(statisticsDatum))
 }
 
 func messageDemo() {

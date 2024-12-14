@@ -22,8 +22,8 @@ type User struct {
 	Password             string    `json:"password" bun:"password,notnull"`
 	CreatedAt            time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
 	UpdatedAt            time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
-	Password_Reset_Token string    `bun:"password_reset_token"`
-	token_expires_at     time.Time `bun:"token_expires_at"`
+	Password_Reset_Token string    `json:"-" bun:"password_reset_token"`
+	Token_expires_at     time.Time `json:"-" bun:"token_expires_at"`
 }
 
 type Credentials struct {
@@ -49,7 +49,7 @@ func GetUsersinfo() ([]User, error) {
 	return users, nil
 }
 
-func UpdateUser(user User) error {
+func UpdateUser(user User, id int64) error {
 	query := db.NewUpdate().Model(&user).Column("updated_at")
 
 	if user.Username != "" {
@@ -60,7 +60,7 @@ func UpdateUser(user User) error {
 		query = query.Column("password")
 	}
 
-	_, err := query.Where("id = ?", user.Id).Exec(ctx)
+	_, err := query.Where("id = ?", id).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}
@@ -80,7 +80,20 @@ func GetUserById(id int64) (User, error) {
 func GetUserByUsername(username string, user *User) error {
 	err := db.NewSelect().
 		Model(user).
-		Where("username = ?", username).
+		Where("username ilike ?", username).
+		Limit(1).
+		Scan(ctx)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetUserByEmail(email string, user *User) error {
+	err := db.NewSelect().
+		Model(user).
+		Where("email ilike ?", email).
 		Limit(1).
 		Scan(ctx)
 

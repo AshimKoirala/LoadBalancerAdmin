@@ -72,8 +72,9 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 	// Publish the message to RabbitMQ
 	err = messaging.PublishMessage(messaging.PUBLISHING_QUEUE, rabbitmessage)
 	if err != nil {
-		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message to RabbitMQ"})
-		return
+		log.Printf("Failed to publish change parameters message")
+		// utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message to RabbitMQ"})
+		// return
 	}
 
 	utils.NewSuccessResponse(w, message)

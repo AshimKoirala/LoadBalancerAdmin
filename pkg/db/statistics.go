@@ -17,6 +17,8 @@ type Statistics struct {
 	FailedRequests     int64     `json:"failed_requests" bun:"failed_requests,default:0"`
 	CreatedAt          time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
 	UpdatedAt          time.Time `json:"updated_at" bun:"updated_at,default:current_timestamp"`
+
+	Replica *Replica `bun:"rel:belongs-to,join:url=url"`
 }
 
 type StatisticsData struct {
@@ -73,7 +75,7 @@ func BatchAddStatistics(statistics *[]StatisticsData) error {
 
 func GetStatistics(ctx context.Context) ([]Statistics, error) {
 	var stats []Statistics
-	err := db.NewSelect().Model(&stats).Scan(ctx)
+	err := db.NewSelect().Model(&stats).Relation("Replica").Scan(ctx)
 	if err != nil {
 		log.Printf("Error fetching statistics: %v", err)
 		return nil, err

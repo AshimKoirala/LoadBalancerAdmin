@@ -18,25 +18,24 @@ func Handler() {
 	mux := http.NewServeMux()
 
 	// Route setup
-	mux.HandleFunc("/admin/register", AuthRegister)
-	mux.HandleFunc("/admin/login", AuthLogin)
-	mux.Handle("/admin/protected", middleware.AuthMiddleware(http.HandlerFunc(ProtectedRoute)))
-	mux.HandleFunc("/admin/users", GetUsers)
-	mux.HandleFunc("/admin/update", UpdateUser)
+	mux.HandleFunc("POST /admin/register", AuthRegister)
+	mux.HandleFunc("POST /admin/login", AuthLogin)
+	mux.Handle("GET /admin/protected", middleware.AuthMiddleware(http.HandlerFunc(ProtectedRoute)))
+	mux.Handle("GET /admin/users", middleware.AuthMiddleware(http.HandlerFunc(GetUsers)))
+	mux.Handle("PATCH /admin/update/{id}", middleware.AuthMiddleware(http.HandlerFunc(UpdateUser)))
 	mux.HandleFunc("/admin/forgot-password", ForgotPassword)
 	mux.HandleFunc("/admin/reset-password", ResetPassword)
-	mux.HandleFunc("/admin/add-replica", AddReplica)
-	mux.HandleFunc("/admin/get-replica", GetReplicas)
-	mux.HandleFunc("/admin/remove-replica", RemoveReplica)
-	mux.HandleFunc("/admin/change-status", ChangeStatus)
-	mux.HandleFunc("/admin/status", Status)
-	mux.HandleFunc("/admin/activity-logs", GetActivityLogs)
-	mux.HandleFunc("/admin/update-prequal-parameters", AddPrequalParameters)
-	mux.HandleFunc("/admin/get-prequal-parameters", GetPrequalParameters)
-	mux.HandleFunc("/admin/get-statistics", GetStatistics)
+	mux.Handle("POST /admin/add-replica", middleware.AuthMiddleware(http.HandlerFunc(AddReplica)))
+	mux.HandleFunc("GET /admin/get-replica", GetReplicas)
+	mux.Handle("DELETE /admin/remove-replica", middleware.AuthMiddleware(http.HandlerFunc(RemoveReplica)))
+	mux.Handle("PATCH /admin/change-status", middleware.AuthMiddleware(http.HandlerFunc(ChangeStatus)))
+	mux.Handle("GET /admin/activity-logs", middleware.AuthMiddleware(http.HandlerFunc(GetActivityLogs)))
+	mux.Handle("PATCH /admin/update-prequal-parameters", middleware.AuthMiddleware(http.HandlerFunc(AddPrequalParameters)))
+	mux.Handle("GET /admin/get-prequal-parameters", middleware.AuthMiddleware(http.HandlerFunc(GetPrequalParameters)))
+	mux.Handle("GET /admin/get-statistics", middleware.AuthMiddleware(http.HandlerFunc(GetStatistics)))
 
 	// Wrap the entire mux with CORS
-	handlerWithCORS := middleware.CORS(mux)
+	// handlerWithCORS := middleware.CORS(mux)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")
@@ -44,7 +43,7 @@ func Handler() {
 		port = "8080"
 	}
 	log.Printf("Server is running on : %s", port)
-	if err := http.ListenAndServe(":"+port, handlerWithCORS); err != nil {
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

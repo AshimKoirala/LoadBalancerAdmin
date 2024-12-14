@@ -89,8 +89,8 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 
 	if err := messaging.PublishMessage(messaging.PUBLISHING_QUEUE, message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
-		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
-		return
+		// utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
+		// return
 	}
 
 	utils.NewSuccessResponse(w, replica)
@@ -115,24 +115,19 @@ func GetReplicas(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveReplica(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		utils.NewErrorResponse(w, http.StatusMethodNotAllowed, []string{"Method not allowed"})
-		return
-	}
-
 	var payload struct {
 		Id  *int64  `json:"id,omitempty"`
 		Url *string `json:"url,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || (payload.Id == nil && payload.Url == nil) {
-		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid or missing ID/URL in request payload"})
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid or missing id or url in request payload"})
 		return
 	}
 
 	var replica *db.Replica
-	var err error
 
+	var err error
 	if payload.Id != nil {
 		replica, err = db.GetReplicaById(r.Context(), *payload.Id)
 	} else if payload.Url != nil {
@@ -163,8 +158,8 @@ func RemoveReplica(w http.ResponseWriter, r *http.Request) {
 
 	if err := messaging.PublishMessage(messaging.PUBLISHING_QUEUE, message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
-		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
-		return
+		// utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
+		// return
 	}
 
 	//utils.NewSuccessResponse(w, "Replica removed successfully")

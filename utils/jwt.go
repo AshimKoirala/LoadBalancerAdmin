@@ -41,5 +41,5 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 }
 
 func JWTExpiryTime() time.Time {
-	return time.Now().Add(5 * time.Minute)
+	return time.Now().Add(24 * 60 * time.Minute)
 }

@@ -9,6 +9,8 @@ import (
 	"os"
 )
 
+type Keyvalue map[string]interface{}
+
 type Response struct {
 	Success bool        `json:"success"`
 	Message interface{} `json:"message,omitempty"`

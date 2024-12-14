@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
@@ -24,7 +26,7 @@ func AuthRegister(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		validationErrors = append(validationErrors, "Invalid request getEmail")
+		validationErrors = append(validationErrors, "Invalid request to email")
 		utils.NewErrorResponse(w, http.StatusBadRequest, validationErrors)
 		return
 	}
@@ -58,9 +60,34 @@ func AuthRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user already exists
-	if _, exists := users[user.Username]; exists {
-		validationErrors = append(validationErrors, "User already exists")
+	var findUser db.User
+
+	err = db.GetUserByUsername(user.Username, &findUser)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Print(err)
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Something went wrong"})
+		return
+	}
+
+	if err != sql.ErrNoRows && strings.EqualFold(user.Username, findUser.Username) {
+		validationErrors = append(validationErrors, "User with username already exists")
+		utils.NewErrorResponse(w, http.StatusConflict, validationErrors)
+		return
+	}
+
+	var findEmail db.User
+
+	err = db.GetUserByEmail(user.Email, &findEmail)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.Print(err)
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Something went wrong"})
+		return
+	}
+
+	if err != sql.ErrNoRows && strings.EqualFold(user.Email, findEmail.Email) {
+		validationErrors = append(validationErrors, "User with email already exists")
 		utils.NewErrorResponse(w, http.StatusConflict, validationErrors)
 		return
 	}
@@ -74,6 +101,7 @@ func AuthRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Save user with hashed password
 	user.Password = hashedPassword
+	user.Email = strings.ToLower(user.Email)
 
 	// Insert the user into the database
 	if err := db.InsertUser(user); err != nil {
@@ -123,24 +151,35 @@ func AuthLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set JWT as a cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    tokenString,
-		HttpOnly: true,
-	})
-
-	// Send success response
-	utils.NewSuccessResponse(w, "Login successful")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	response := struct {
+		Success bool   `json:"success"`
+		Token   string `json:"token"`
+	}{
+		Success: true,
+		Token:   tokenString,
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func ProtectedRoute(w http.ResponseWriter, r *http.Request) {
 	username := r.Context().Value("username").(string)
-	w.Write([]byte("Welcome to load balancer , " + username))
+
+	var user db.User
+
+	err := db.GetUserByUsername(username, &user)
+
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error fetching user"})
+		return
+	}
+
+	utils.NewSuccessResponse(w, user)
+	return
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
-
 	// Fetch the list of users from the database
 	users, err := db.GetUsersinfo()
 	if err != nil {
@@ -161,15 +200,25 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		Id              int64  `json:"id"`
-		Username        string `json:"username,omitempty"`
 		CurrentPassword string `json:"current_password,omitempty"`
 		NewPassword     string `json:"new_password,omitempty"`
 	}
 	var validationErrors []string
 
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid user ID"})
+		return
+	}
+
+	if id == 0 {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid user ID"})
+		return
+	}
+
 	// Decode request payload
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	err = json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		validationErrors = append(validationErrors, "Invalid request payload")
 		utils.NewErrorResponse(w, http.StatusBadRequest, validationErrors)
@@ -177,7 +226,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch user by ID
-	user, err := db.GetUserById(payload.Id)
+	user, err := db.GetUserById(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			validationErrors = append(validationErrors, "User not found")
@@ -186,21 +235,6 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error fetching user"})
 		return
-	}
-
-	// Validate username
-	if payload.Username != "" {
-		// Check username length
-		if len(payload.Username) < 3 || len(payload.Username) > 32 {
-			validationErrors = append(validationErrors, "Username must be between 3 and 32 characters long")
-		}
-
-		// Check if username already exists
-		if _, exists := users[payload.Username]; exists {
-			validationErrors = append(validationErrors, "User already exists")
-		}
-
-		user.Username = payload.Username
 	}
 
 	// Validate and update password
@@ -242,7 +276,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user.UpdatedAt = time.Now()
 
 	// Save the updated user to the database
-	err = db.UpdateUser(user)
+	err = db.UpdateUser(user, id)
 	if err != nil {
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error updating user"})
 		return

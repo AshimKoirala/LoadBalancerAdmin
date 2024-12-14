@@ -47,13 +47,17 @@ func NewEmailResponse(to string, subject string, body string) error {
 		return fmt.Errorf("SMTP credentials are not set")
 	}
 
-	message := fmt.Sprintf("Subject: %s\n\n%s", subject, body)
+	message := fmt.Sprintf("Subject: %s\n\n%s\r\n", subject, body)
 
 	// authentication for the SMTP server
 	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
 
+	fromm := fmt.Sprintf("From: <%s>", "load_balancer@load.com")
+	tom := fmt.Sprintf("To: <%s>", to)
+
+	msg := fromm + tom + message
 	// Sending the email
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, []string{to}, []byte(message))
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, "load_balancer@load.com", []string{to}, []byte(msg))
 	log.Printf("Sending email from %s to %s with subject: %s", senderEmail, to, subject)
 
 	if err != nil {

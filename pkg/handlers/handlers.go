@@ -30,7 +30,7 @@ func Handler() {
 	mux.Handle("DELETE /admin/remove-replica", middleware.AuthMiddleware(http.HandlerFunc(RemoveReplica)))
 	mux.Handle("PATCH /admin/change-status", middleware.AuthMiddleware(http.HandlerFunc(ChangeStatus)))
 	mux.Handle("GET /admin/activity-logs", middleware.AuthMiddleware(http.HandlerFunc(GetActivityLogs)))
-	mux.Handle("PATCH /admin/update-prequal-parameters", middleware.AuthMiddleware(http.HandlerFunc(AddPrequalParameters)))
+	mux.Handle("POST /admin/update-prequal-parameters", middleware.AuthMiddleware(http.HandlerFunc(AddPrequalParameters)))
 	mux.Handle("GET /admin/get-prequal-parameters", middleware.AuthMiddleware(http.HandlerFunc(GetPrequalParameters)))
 	mux.Handle("GET /admin/get-statistics", middleware.AuthMiddleware(http.HandlerFunc(GetStatistics)))
 
@@ -43,7 +43,7 @@ func Handler() {
 		port = "8080"
 	}
 	log.Printf("Server is running on : %s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, middleware.CORS(mux)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

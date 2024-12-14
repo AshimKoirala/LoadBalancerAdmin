@@ -54,70 +54,32 @@ func GetPrequalParametersResponse(ctx context.Context) (PrequalParametersRespons
 	return response, nil
 }
 
-// Insert new row
-func AddPrequalParametersResponse(ctx context.Context, response PrequalParametersResponse, activateId *int64) error {
-	var count int
-	count, err := db.NewSelect().
-		Model((*PrequalParametersResponse)(nil)).
-		Count(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to check table count: %v", err)
-	}
+type AddPrequalParametersType struct {
+	MaxLifeTime       int     `json:"max_life_time"`
+	PoolSize          int     `json:"pool_size"`
+	ProbeFactor       float64 `json:"probe_factor"`
+	ProbeRemoveFactor int     `json:"probe_remove_factor"`
+	Mu                int     `json:"mu"`
+	Status            string  `json:"status"`
+}
 
-	if count == 0 {
-		response.Status = "active" // First entry is always active
-	} else {
-		response.Status = "inactive" // Default status for subsequent entries
+// Insert new row
+func AddPrequalParametersResponse(ctx context.Context, response AddPrequalParametersType, activateId *int64) error {
+	payload := &PrequalParametersResponse{
+		MaxLifeTime:       response.MaxLifeTime,
+		PoolSize:          response.PoolSize,
+		ProbeFactor:       response.ProbeFactor,
+		ProbeRemoveFactor: response.ProbeRemoveFactor,
+		Mu:                response.Mu,
+		Status:            "active",
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	// Insert the new record
-	_, err = db.NewInsert().Model(&response).Exec(ctx)
+	_, err := db.NewInsert().Model(payload).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to add prequal parameters response: %v", err)
-	}
-
-	// If an activateID is provided, activate the specified entry
-	if activateId != nil {
-		// Fetch the specified entry
-		var activateResponse PrequalParametersResponse
-		err := db.NewSelect().
-			Model(&activateResponse).
-			Where("id = ?", *activateId).
-			Scan(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to fetch prequal parameters with ID %d: %v", *activateId, err)
-		}
-
-		// Ensure the entry is currently inactive
-		if activateResponse.Status != "inactive" {
-			return fmt.Errorf("only 'inactive' entries can be activated")
-		}
-
-		// Set all other entries to inactive
-		_, err = db.NewUpdate().
-			Model((*PrequalParametersResponse)(nil)).
-			Set("status = ?", "inactive").
-			Exec(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to deactivate other entries: %v", err)
-		}
-
-		// Activate the specified entry
-		_, err = db.NewUpdate().
-			Model(&activateResponse).
-			Set("status = ?", "active").
-			Set("updated_at = ?", time.Now()).
-			Where("id = ?", *activateId).
-			Exec(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to activate Prequal Parameters with ID %d: %v", *activateId, err)
-		}
-
-		// Log
-		activationMessage := fmt.Sprintf("Prequal Parameters with ID %d is now active", *activateId)
-		if logErr := LogActivity(ctx, "success", activationMessage, activateId); logErr != nil {
-			return fmt.Errorf("failed to log activity for activation: %v", logErr)
-		}
 	}
 
 	// Log

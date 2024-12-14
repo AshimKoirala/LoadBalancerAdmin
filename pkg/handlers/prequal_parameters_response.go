@@ -36,22 +36,23 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload struct {
-		Data       db.PrequalParametersResponse `json:"data"`
-		ActivateId *int64                       `json:"activate_id,omitempty"`
+		Data       db.AddPrequalParametersType `json:"data"`
+		ActivateId *int64                      `json:"activate_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
 		return
 	}
 
-	// Set default status if not provided
-	if payload.Data.Status == "" {
-		payload.Data.Status = "inactive"
+	if payload.Data.MaxLifeTime <= 0 || payload.Data.ProbeRemoveFactor <= 0 || payload.Data.PoolSize <= 10 || payload.Data.Mu <= 0 || payload.Data.ProbeFactor <= 0 {
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid probe parameters. Ensure that max_life_time, probe_factor, probe_remove_factor and mu are greater than 0 and Pool size is greater than 10"})
+		return
 	}
 
 	// Call the database function with the payload
 	err := db.AddPrequalParametersResponse(r.Context(), payload.Data, payload.ActivateId)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to create or activate entry"})
 		return
 	}

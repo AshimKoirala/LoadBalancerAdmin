@@ -292,7 +292,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&getEmail)
 	if err != nil {
-		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request getEmail"})
+		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request"})
 		return
 	}
 
@@ -311,6 +311,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	// Send OTP via email
 	err = utils.NewEmailResponse(getEmail.Email, "Password Reset OTP", "Your OTP is: "+otp)
 	if err != nil {
+		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Error sending email"})
 		return
 	}

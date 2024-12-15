@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -39,12 +40,37 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 		UpdatedAt:           time.Now(),
 	}
 
-	_, err := db.NewInsert().Model(replica).Returning("id").Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("error adding replica: %v", err)
+	var findReplica Replica
+	err := db.NewSelect().
+		Model(&findReplica).
+		Where("url = ?", url).
+		Where("name = ?", name).
+		Scan(ctx)
+
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("error occured: %v", err)
 	}
 
-	if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is ready to be active", name), &replica.Id); err != nil {
+	if err == nil {
+		// Update the replica's status to active
+		_, updateErr := db.NewUpdate().
+			Model(&findReplica).
+			Set("status = ?", INACTIVE).
+			Set("updated_at = ?", time.Now()).
+			Set("health_check_endpoint = ?", replica.HealthCheckEndpoint).
+			Where("url = ?", url).
+			Exec(ctx)
+		if updateErr != nil {
+			return fmt.Errorf("error updating replica: %v", updateErr)
+		}
+	} else {
+		_, err = db.NewInsert().Model(replica).Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("error adding replica: %v", err)
+		}
+	}
+
+	if err = LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is ready to be active", name), &findReplica.Id); err != nil {
 		return fmt.Errorf("error logging activity: %v", err)
 	}
 
@@ -98,7 +124,7 @@ func RemoveReplica(ctx context.Context, id *int64, url *string) error {
 	// log.Printf("Successfully deleted replica with ID: %d", id)
 
 	// Log the activity
-	if err := LogActivity(ctx, "warning", fmt.Sprintf("Replica '%s' removed", replica.Name), &replica.Id); err != nil {
+	if err := LogActivity(ctx, "warning", fmt.Sprintf("Replica '%s' is disabled", replica.Name), &replica.Id); err != nil {
 		log.Printf("Error logging activity for replica '%s': %v", replica.Name, err)
 	}
 
@@ -134,7 +160,7 @@ func UpdateStatus(ctx context.Context, id int64, newStatus string) error {
 
 		// Deactivated status
 		if oldStatus == ACTIVE && newStatus == DISABLED {
-			if err := LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is deactivated", replica.Name), &id); err != nil {
+			if err := LogActivity(ctx, "warning", fmt.Sprintf("Replica '%s' is deactivated", replica.Name), &id); err != nil {
 				return fmt.Errorf("error logging activity: %v", err)
 			}
 		}
@@ -197,4 +223,21 @@ func GetReplicaByName(ctx context.Context, name string) (*Replica, error) {
 		return nil, fmt.Errorf("failed to fetch replica by name: %v", err)
 	}
 	return &replica, nil
+}
+
+func UpdateStatusByUrl(url string, newStatus string) error {
+	var ctx = context.Background()
+	_, err := db.NewUpdate().
+		Model((*Replica)(nil)).
+		Set("status = ?", newStatus).
+		Set("updated_at = ?", time.Now()).
+		Where("url = ?", url).
+		Returning("id").
+		Exec(ctx)
+
+	if err != nil {
+		return fmt.Errorf("error updating replica status: %v", err)
+	}
+
+	return nil
 }

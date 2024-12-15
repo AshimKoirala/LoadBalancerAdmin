@@ -82,12 +82,7 @@ func AddPrequalParametersResponse(ctx context.Context, response AddPrequalParame
 		return fmt.Errorf("failed to add prequal parameters response: %v", err)
 	}
 
-	// Log
-	message := fmt.Sprintf(
-		"Prequal request added: MaxLifeTime=%d, PoolSize=%d, ProbeFactor=%.2f, ProbeRemoveFactor=%d, Mu=%d",
-		response.MaxLifeTime, response.PoolSize, response.ProbeFactor, response.ProbeRemoveFactor, response.Mu,
-	)
-	if logErr := LogActivity(ctx, "success", message, nil); logErr != nil {
+	if logErr := LogActivity(ctx, "success", "Prequal Parameters Updated", nil); logErr != nil {
 		return fmt.Errorf("failed to log activity for prequal parameters response: %v", logErr)
 	}
 

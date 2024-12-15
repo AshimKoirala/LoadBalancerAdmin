@@ -62,7 +62,7 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 	// 	// log.Printf("received non-200 response: %d", resp.StatusCode)
 
 	// }
-	resp.Body.Close()
+	defer resp.Body.Close()
 
 	err = db.AddReplica(r.Context(), payload.Name, payload.URL, payload.HealthCheckEndpoint)
 	if err != nil {
@@ -89,7 +89,7 @@ func AddReplica(w http.ResponseWriter, r *http.Request) {
 
 	if err := messaging.PublishMessage(messaging.PUBLISHING_QUEUE, message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
-		// utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message"})
 		// return
 	}
 
@@ -184,13 +184,61 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Change status of the replica
-	err = db.UpdateStatus(r.Context(), payload.Id, payload.Status)
+	replica, err := db.GetReplicaById(r.Context(), payload.Id)
+
 	if err != nil {
-		log.Println(err)
-		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to change replica status"})
+		utils.NewErrorResponse(w, http.StatusNotFound, []string{"Replica not found"})
 		return
 	}
+
+	if payload.Status == "disabled" {
+		message := &messaging.Message{
+			Name: messaging.REMOVE_REPLICA,
+			Body: map[string]string{
+				"name": replica.Name,
+				"url":  replica.URL,
+			},
+		}
+
+		if err := messaging.PublishMessage(messaging.PUBLISHING_QUEUE, message); err != nil {
+			log.Printf("Failed to publish message: %v", err)
+			utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to disable replica"})
+			return
+		}
+
+		err = db.LogActivity(r.Context(), "warning", fmt.Sprintf("Replica '%v' is being disabled", replica.Name), &replica.Id)
+	}
+
+	if payload.Status == "active" {
+		message := &messaging.Message{
+			Name: messaging.ADD_REPLICA,
+			Body: map[string]string{
+				"name": replica.Name,
+				"url":  replica.URL,
+			},
+		}
+
+		if err := messaging.PublishMessage(messaging.PUBLISHING_QUEUE, message); err != nil {
+			log.Printf("Failed to publish message: %v", err)
+			utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to enable replica"})
+			return
+		}
+
+		err = db.LogActivity(r.Context(), "warning", fmt.Sprintf("Replica '%v' is being activated", replica.Name), &replica.Id)
+	}
+
+	if err != nil {
+		log.Println(err)
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to log activity"})
+	}
+
+	// Change status of the replica
+	// err = db.UpdateStatus(r.Context(), payload.Id, payload.Status)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to change replica status"})
+	// 	return
+	// }
 
 	utils.NewSuccessResponse(w, "Replica status updated successfully")
 }

@@ -21,10 +21,11 @@ func processMessage(body []byte) {
 
 	switch msg.Name {
 	case ADDED_REPLICA:
-		// return
-		handleReplicaAdded(body)
+		handleReplicaAdded(msg.Body.(string))
 	case REMOVED_REPLICA:
-		handleReplicaRemoved(body)
+		handleReplicaRemoved(msg.Body.(string))
+	case REPLICA_FAILED:
+		handleReplicaFailed(msg.Body.(string))
 	case PARAMETERS_UPDATED:
 		handleParametersUpdated(body)
 	case PARAMETERS_UPDATE_FAILED:

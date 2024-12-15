@@ -8,16 +8,16 @@ import (
 )
 
 func GetActivityLogs(w http.ResponseWriter, r *http.Request) {
-    logs, err := db.FetchActivityLogs(r.Context()) // Fetch logs from the database
-    if err != nil {
-        utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch activity logs"})
-        return
-    }
+	logs, err := db.FetchActivityLogs(r.Context()) // Fetch logs from the database
+	if err != nil {
+		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to fetch activity logs"})
+		return
+	}
 
-    if len(logs) == 0 {
-        utils.NewSuccessResponse(w, "No activity logs found")
-        return
-    }
+	if len(logs) == 0 {
+		utils.NewSuccessResponse(w, []string{})
+		return
+	}
 
-    utils.NewSuccessResponseWithData(w, logs)
+	utils.NewSuccessResponseWithData(w, logs)
 }

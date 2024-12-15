@@ -1,6 +1,7 @@
 package messaging
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,8 +15,7 @@ type Message struct {
 }
 
 type ReplicaAdded struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	URL string `json:"url"`
 }
 
 type ReplicaStatisticsParameters struct {
@@ -38,37 +38,62 @@ type Messages struct {
 	Body interface{} `json:"body"`
 }
 
-func handleReplicaAdded(body []byte) {
-	fmt.Print(body)
-	var msg Message
-	if err := json.Unmarshal(body, &msg); err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
+func handleReplicaAdded(body string) {
+	log.Print("Replica added: ", body)
+	db.UpdateStatusByUrl(body, "active")
+	ctx := context.Background()
+	replica, err := db.GetReplicaByUrl(ctx, body)
+
+	if err != nil {
+		log.Printf("Failed to get replica by URL: %s", err)
 		return
 	}
 
-	var data ReplicaAdded
-	if err := json.Unmarshal([]byte(fmt.Sprintf("%v", msg.Body)), &data); err != nil {
-		log.Printf("Failed to parse replica-added body: %v", err)
+	err = db.LogActivity(ctx, "success", fmt.Sprintf("Replica %v is now active", replica.Name), &replica.Id)
+
+	if err != nil {
+		log.Printf("Failed to log activity: %s", err)
 		return
 	}
-
-	log.Printf("Replica added: Name=%s, URL=%s", data.Name, data.URL)
+	// log.Printf("Replica added: Name=%s, URL=%s", data.Name, data.URL)
 }
 
-func handleReplicaRemoved(body []byte) {
-	var msg Message
-	if err := json.Unmarshal(body, &msg); err != nil {
-		log.Printf("Failed to unmarshal message: %v", err)
+func handleReplicaFailed(body string) {
+	log.Print("Replica removed: ", body)
+	db.UpdateStatusByUrl(body, "inactive")
+	ctx := context.Background()
+	replica, err := db.GetReplicaByUrl(ctx, body)
+
+	if err != nil {
+		log.Printf("Failed to get replica by URL: %s", err)
 		return
 	}
 
-	var data ReplicaAdded
-	if err := json.Unmarshal([]byte(fmt.Sprintf("%v", msg.Body)), &data); err != nil {
-		log.Printf("Failed to parse replica-removed body: %v", err)
+	err = db.LogActivity(ctx, "error", fmt.Sprintf("Replica %v is unavailable and set to inactive", replica.Name), &replica.Id)
+
+	if err != nil {
+		log.Printf("Failed to log activity: %s", err)
+		return
+	}
+}
+
+func handleReplicaRemoved(body string) {
+	log.Print("Replica removed: ", body)
+	db.UpdateStatusByUrl(body, "disabled")
+	ctx := context.Background()
+	replica, err := db.GetReplicaByUrl(ctx, body)
+
+	if err != nil {
+		log.Printf("Failed to get replica by URL: %s", err)
 		return
 	}
 
-	log.Printf("Replica removed: Name=%s, URL=%s", data.Name, data.URL)
+	err = db.LogActivity(ctx, "error", fmt.Sprintf("Replica %v is disabled", replica.Name), &replica.Id)
+
+	if err != nil {
+		log.Printf("Failed to log activity: %s", err)
+		return
+	}
 }
 
 func handleParametersUpdated(body []byte) {

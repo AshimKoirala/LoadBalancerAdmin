@@ -1,0 +1,22 @@
+services:
+  rabbitmq:
+    image: docker.io/rabbitmq:4.0-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # Port for RabbitMQ messaging
+      - "15672:15672" # Port for RabbitMQ management console
+
+  psql:
+    image: docker.io/postgres:latest
+    container_name: psql
+    ports:
+      - "5432:5432" # Map host port 5432 to container port 5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: prequal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

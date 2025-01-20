@@ -64,7 +64,7 @@ type AddPrequalParametersType struct {
 }
 
 // Insert new row
-func AddPrequalParametersResponse(ctx context.Context, response AddPrequalParametersType, activateId *int64) error {
+func AddPrequalParametersResponse(ctx context.Context, response AddPrequalParametersType) (*PrequalParametersResponse, error) {
 	payload := &PrequalParametersResponse{
 		MaxLifeTime:       response.MaxLifeTime,
 		PoolSize:          response.PoolSize,
@@ -79,12 +79,12 @@ func AddPrequalParametersResponse(ctx context.Context, response AddPrequalParame
 	// Insert the new record
 	_, err := db.NewInsert().Model(payload).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to add prequal parameters response: %v", err)
+		return nil, fmt.Errorf("failed to add prequal parameters response: %v", err)
 	}
 
 	if logErr := LogActivity(ctx, "success", "Prequal Parameters Updated", nil); logErr != nil {
-		return fmt.Errorf("failed to log activity for prequal parameters response: %v", logErr)
+		return nil, fmt.Errorf("failed to log activity for prequal parameters response: %v", logErr)
 	}
 
-	return nil
+	return payload, nil
 }

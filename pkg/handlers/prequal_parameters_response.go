@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/AshimKoirala/load-balancer-admin/messaging"
 	"github.com/AshimKoirala/load-balancer-admin/pkg/db"
 	"github.com/AshimKoirala/load-balancer-admin/utils"
 )
@@ -35,22 +34,20 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload struct {
-		Data       db.AddPrequalParametersType `json:"data"`
-		ActivateId *int64                      `json:"activate_id,omitempty"`
-	}
+	var payload db.AddPrequalParametersType
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		fmt.Printf("Error decoding request payload: %v", err)
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid request payload"})
 		return
 	}
 
-	if payload.Data.MaxLifeTime <= 0 || payload.Data.ProbeRemoveFactor <= 0 || payload.Data.PoolSize <= 10 || payload.Data.Mu <= 0 || payload.Data.ProbeFactor <= 0 {
+	if payload.MaxLifeTime <= 0 || payload.ProbeRemoveFactor <= 0 || payload.PoolSize <= 10 || payload.Mu <= 0 || payload.ProbeFactor <= 0 {
 		utils.NewErrorResponse(w, http.StatusBadRequest, []string{"Invalid probe parameters. Ensure that max_life_time, probe_factor, probe_remove_factor and mu are greater than 0 and Pool size is greater than 10"})
 		return
 	}
 
 	// Call the database function with the payload
-	err := db.AddPrequalParametersResponse(r.Context(), payload.Data, payload.ActivateId)
+	_, err := db.AddPrequalParametersResponse(r.Context(), payload)
 	if err != nil {
 		log.Println(err)
 		utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to create or activate entry"})
@@ -58,25 +55,25 @@ func AddPrequalParameters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	message := "Prequal Parameter added successfully"
-	if payload.ActivateId != nil {
-		message += fmt.Sprintf(" and entry with ID %d was activated", *payload.ActivateId)
-	}
+	// if data.Id != nil {
+	// 	message += fmt.Sprintf(" and entry with ID %d was activated", *payload.ActivateId)
+	// }
 
-	rabbitmessage := &messaging.Message{
-		Name: messaging.NEW_PARAMETERS,
-		Body: map[string]interface{}{
-			"data":        payload.Data,
-			"activate_id": payload.ActivateId,
-		},
-	}
+	// rabbitmessage := &messaging.Message{
+	// 	Name: messaging.NEW_PARAMETERS,
+	// 	Body: map[string]interface{}{
+	// 		"data":        payload,
+	// 		"id": payload.ActivateId,
+	// 	},
+	// }
 
 	// Publish the message to RabbitMQ
-	err = messaging.PublishMessage(messaging.PUBLISHING_QUEUE, rabbitmessage)
-	if err != nil {
-		log.Printf("Failed to publish change parameters message")
-		// utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message to RabbitMQ"})
-		// return
-	}
+	// err = messaging.PublishMessage(messaging.PUBLISHING_QUEUE, rabbitmessage)
+	// if err != nil {
+	// 	log.Printf("Failed to publish change parameters message")
+	// 	// utils.NewErrorResponse(w, http.StatusInternalServerError, []string{"Failed to publish message to RabbitMQ"})
+	// 	// return
+	// }
 
 	utils.NewSuccessResponse(w, message)
 }

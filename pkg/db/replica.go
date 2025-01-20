@@ -29,7 +29,6 @@ const (
 	DISABLED = "disabled"
 )
 
-// add replica
 func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) error {
 	replica := &Replica{
 		Name:                name,
@@ -48,14 +47,14 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 		Scan(ctx)
 
 	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("error occured: %v", err)
+		return fmt.Errorf("error occurred: %v", err)
 	}
 
 	if err == nil {
 		// Update the replica's status to active
 		_, updateErr := db.NewUpdate().
 			Model(&findReplica).
-			Set("status = ?", INACTIVE).
+			Set("status = ?", ACTIVE).
 			Set("updated_at = ?", time.Now()).
 			Set("health_check_endpoint = ?", replica.HealthCheckEndpoint).
 			Where("url = ?", url).
@@ -63,14 +62,17 @@ func AddReplica(ctx context.Context, name, url, healthCheckEndpoint string) erro
 		if updateErr != nil {
 			return fmt.Errorf("error updating replica: %v", updateErr)
 		}
+		replica = &findReplica
 	} else {
+		// Insert new replica
 		_, err = db.NewInsert().Model(replica).Exec(ctx)
 		if err != nil {
 			return fmt.Errorf("error adding replica: %v", err)
 		}
 	}
 
-	if err = LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is ready to be active", name), &findReplica.Id); err != nil {
+	// Log activity
+	if err = LogActivity(ctx, "success", fmt.Sprintf("Replica '%s' is ready to be active", name), &replica.Id); err != nil {
 		return fmt.Errorf("error logging activity: %v", err)
 	}
 

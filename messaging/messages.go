@@ -139,8 +139,6 @@ func handleStatistics(body []statDataArr) {
 		}
 
 		statisticsDatum = append(statisticsDatum, data)
-		fmt.Printf("Replica: %s, SuccessfulRequests: %d, FailedRequests: %d\n",
-			replica.ReplicaName, replica.Statistics.SuccessfulRequests, replica.Statistics.FailedRequests)
 	}
 
 	err := db.BatchAddStatistics(&statisticsDatum)
